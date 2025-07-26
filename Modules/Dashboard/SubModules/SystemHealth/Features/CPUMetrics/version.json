@@ -1,0 +1,17 @@
+{
+  "version": "1.0.0",
+  "buildDate": "2025-07-25T23:55:00Z",
+  "components": {
+    "dataSource": "1.0.0",
+    "display": {
+      "version": "1.0.0",
+      "widgets": {
+        "percentageBar": "1.0.0",
+        "numberDisplay": "1.0.0",
+        "animation": "1.0.0"
+      }
+    }
+  },
+  "hotSwappable": true,
+  "buildTime": 45
+}

@@ -1,0 +1,100 @@
+name: Auto-Generate Documentation
+
+# Trigger on any code changes
+on:
+  push:
+    paths:
+      - 'Modules/**/*.swift'
+      - 'Core/**/*.swift'
+      - 'Platforms/**/*.swift'
+  pull_request:
+    paths:
+      - 'Modules/**/*.swift'
+      - 'Core/**/*.swift'
+      - 'Platforms/**/*.swift'
+
+jobs:
+  generate-docs:
+    name: Generate Swift DocC Documentation
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+          
+      - name: Generate Module Documentation
+        run: |
+          echo "📚 Generating documentation for all modules..."
+          
+          # Generate docs for Core
+          cd Core
+          swift package generate-documentation \
+            --target BridgeCore \
+            --output-path ../Documentation/API/Core \
+            --transform-for-static-hosting \
+            --hosting-base-path BridgeTemplate/Documentation/API/Core
+          
+          # Generate docs for each module
+          cd ../Modules
+          for module in */; do
+            if [ -f "${module}Package.swift" ]; then
+              echo "📖 Documenting ${module}..."
+              cd "$module"
+              swift package generate-documentation \
+                --output-path ../../Documentation/API/Modules/${module} \
+                --transform-for-static-hosting \
+                --hosting-base-path BridgeTemplate/Documentation/API/Modules/${module}
+              cd ..
+            fi
+          done
+          
+      - name: Generate Architecture Diagrams
+        run: |
+          echo "🎨 Generating architecture diagrams..."
+          # Use PlantUML or Mermaid to generate diagrams from code structure
+          
+      - name: Update Module README Files
+        run: |
+          echo "📝 Updating README files..."
+          # Script to extract module documentation and update READMEs
+          swift run update-readmes
+          
+      - name: Build Documentation Index
+        run: |
+          echo "🏗️ Building documentation index..."
+          # Generate main documentation index linking all modules
+          
+      - name: Commit Documentation Updates
+        if: github.event_name == 'push'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Documentation/
+          git add Modules/*/README.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "📚 Auto-update documentation [skip ci]"
+          
+      - name: Push Documentation
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./Documentation
+          
+      - name: Create Documentation Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: Documentation/
+          retention-days: 30

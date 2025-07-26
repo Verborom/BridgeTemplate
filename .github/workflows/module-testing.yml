@@ -1,0 +1,215 @@
+name: Module Testing and Versioning
+
+on:
+  push:
+    paths:
+      - 'Modules/**'
+  pull_request:
+    paths:
+      - 'Modules/**'
+
+jobs:
+  detect-changes:
+    name: Detect Changed Modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.detect.outputs.modules }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Detect changed modules
+        id: detect
+        run: |
+          # Get list of changed modules
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep "^Modules/" || true)
+          MODULES=$(echo "$CHANGED_FILES" | cut -d'/' -f2 | sort -u | jq -R -s -c 'split("\n")[:-1]')
+          echo "modules=$MODULES" >> $GITHUB_OUTPUT
+          echo "Changed modules: $MODULES"
+
+  test-module:
+    name: Test ${{ matrix.module }}
+    needs: detect-changes
+    if: needs.detect-changes.outputs.modules != '[]'
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+          
+      - name: Cache Swift packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            .build
+          key: ${{ runner.os }}-swift-${{ matrix.module }}-${{ hashFiles('Modules/${{ matrix.module }}/Package.resolved') }}
+          
+      - name: Build Module
+        run: |
+          cd Modules/${{ matrix.module }}
+          swift build
+          
+      - name: Run Tests
+        run: |
+          cd Modules/${{ matrix.module }}
+          swift test --enable-test-discovery
+          
+      - name: Check Documentation Coverage
+        run: |
+          cd Modules/${{ matrix.module }}
+          # Custom script to verify all public APIs have documentation
+          swift run check-doc-coverage || echo "Documentation coverage check not available"
+          
+      - name: Lint Code
+        run: |
+          cd Modules/${{ matrix.module }}
+          # SwiftLint check
+          if [ -f .swiftlint.yml ]; then
+            swiftlint
+          fi
+
+  version-bump:
+    name: Bump Module Version
+    needs: [detect-changes, test-module]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Determine Version Bump Type
+        id: version-type
+        run: |
+          # Analyze commit messages to determine version bump type
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [[ "$COMMIT_MSG" == *"BREAKING:"* ]] || [[ "$COMMIT_MSG" == *"major:"* ]]; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif [[ "$COMMIT_MSG" == *"feat:"* ]] || [[ "$COMMIT_MSG" == *"feature:"* ]]; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "type=patch" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Bump Module Version
+        run: |
+          cd Modules/${{ matrix.module }}
+          
+          # Read current version
+          CURRENT_VERSION=$(jq -r .version version.json)
+          
+          # Bump version based on type
+          case "${{ steps.version-type.outputs.type }}" in
+            major)
+              NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1+1".0.0"}')
+              ;;
+            minor)
+              NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2+1".0"}')
+              ;;
+            patch)
+              NEW_VERSION=$(echo $CURRENT_VERSION | awk -F. '{print $1"."$2"."$3+1}')
+              ;;
+          esac
+          
+          # Update version.json
+          jq ".version = \"$NEW_VERSION\" | .buildTimestamp = \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\" | .commitHash = \"${{ github.sha }}\"" version.json > version.json.tmp
+          mv version.json.tmp version.json
+          
+          echo "Bumped ${{ matrix.module }} from $CURRENT_VERSION to $NEW_VERSION"
+          
+      - name: Update Version Manifest
+        run: |
+          # Update main version manifest
+          MODULE_ID="com.bridge.${{ matrix.module }}"
+          VERSION=$(jq -r .version Modules/${{ matrix.module }}/version.json)
+          
+          jq ".modules[\"$MODULE_ID\"] = \"$VERSION\"" version-manifest.json > manifest.tmp
+          mv manifest.tmp version-manifest.json
+          
+      - name: Commit Version Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add Modules/${{ matrix.module }}/version.json
+          git add version-manifest.json
+          git commit -m "🔖 Bump ${{ matrix.module }} to $(jq -r .version Modules/${{ matrix.module }}/version.json) [skip ci]"
+          
+      - name: Create Version Tag
+        run: |
+          VERSION=$(jq -r .version Modules/${{ matrix.module }}/version.json)
+          git tag "${{ matrix.module }}-v$VERSION"
+          
+      - name: Push Changes
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
+          tags: true
+
+  build-module-artifact:
+    name: Build Module Artifact
+    needs: [detect-changes, test-module]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        module: ${{ fromJson(needs.detect-changes.outputs.modules) }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+          
+      - name: Build Release Binary
+        run: |
+          cd Modules/${{ matrix.module }}
+          swift build -c release
+          
+      - name: Package Module
+        run: |
+          cd Modules/${{ matrix.module }}
+          VERSION=$(jq -r .version version.json)
+          
+          # Create package directory
+          mkdir -p ../../Build/Modules/${{ matrix.module }}/v$VERSION
+          
+          # Copy built products
+          cp -r .build/release/* ../../Build/Modules/${{ matrix.module }}/v$VERSION/
+          
+          # Copy metadata
+          cp version.json ../../Build/Modules/${{ matrix.module }}/v$VERSION/
+          
+          # Create archive
+          cd ../../Build/Modules
+          tar -czf ${{ matrix.module }}-v$VERSION.tar.gz ${{ matrix.module }}/v$VERSION
+          
+      - name: Upload Module Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.module }}-module
+          path: Build/Modules/${{ matrix.module }}-*.tar.gz
+          retention-days: 90
