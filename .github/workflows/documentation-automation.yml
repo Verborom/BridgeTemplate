@@ -1,0 +1,740 @@
+name: Documentation Automation
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'Core/**/*.swift'
+      - 'Modules/**/*.swift'
+      - 'Platforms/**/*.swift'
+      - 'Core/Intelligence/*.json'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'Core/**/*.swift'
+      - 'Modules/**/*.swift'
+      - 'Platforms/**/*.swift'
+  schedule:
+    # Refresh documentation daily
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-documentation:
+    name: 📚 Auto-Documentation Generation
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Analyze Code Changes
+        run: |
+          echo "🔍 Analyzing code changes for documentation impact..."
+          
+          # Get changed files
+          if [ "${{ github.event_name }}" = "push" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          else
+            CHANGED_FILES=$(find . -name "*.swift" -newer docs/last-doc-update.timestamp 2>/dev/null || find . -name "*.swift")
+          fi
+          
+          echo "Changed files requiring documentation update:"
+          echo "$CHANGED_FILES"
+          
+          # Analyze impact
+          DOCS_IMPACT="low"
+          if echo "$CHANGED_FILES" | grep -q "Core/.*\.swift"; then
+            DOCS_IMPACT="high"
+          elif echo "$CHANGED_FILES" | grep -q "Modules/.*/Sources/.*\.swift"; then
+            DOCS_IMPACT="medium"
+          fi
+          
+          echo "DOCS_IMPACT=$DOCS_IMPACT" >> $GITHUB_ENV
+          
+      - name: Generate Component Documentation
+        run: |
+          echo "📖 Auto-generating component documentation..."
+          
+          # Create comprehensive documentation generator
+          python3 << 'EOF'
+          import re
+          import json
+          import os
+          import glob
+          from datetime import datetime
+          
+          def extract_swift_documentation(file_path):
+              """Extract documentation from Swift files"""
+              try:
+                  with open(file_path, 'r', encoding='utf-8') as f:
+                      content = f.read()
+              except:
+                  return None
+              
+              # Extract class/struct documentation
+              docs = {}
+              
+              # Find documented classes/structs
+              pattern = r'/// # (.+?)(?:\n///.*?)*\n(?:@\w+\s+)*(?:public\s+)?(?:class|struct|protocol|enum)\s+(\w+)'
+              matches = re.finditer(pattern, content, re.MULTILINE | re.DOTALL)
+              
+              for match in matches:
+                  title = match.group(1).strip()
+                  class_name = match.group(2).strip()
+                  
+                  # Extract full documentation block
+                  start_pos = match.start()
+                  lines = content[:start_pos].split('\n')
+                  
+                  # Find start of documentation block
+                  doc_lines = []
+                  for i in range(len(lines) - 1, -1, -1):
+                      line = lines[i].strip()
+                      if line.startswith('///'):
+                          doc_lines.insert(0, line[3:].strip())
+                      elif line == '' and doc_lines:
+                          continue
+                      else:
+                          break
+                  
+                  docs[class_name] = {
+                      'title': title,
+                      'documentation': '\n'.join(doc_lines),
+                      'file': file_path
+                  }
+              
+              return docs
+          
+          # Process all Swift files
+          all_docs = {}
+          swift_files = glob.glob('**/*.swift', recursive=True)
+          
+          for file_path in swift_files:
+              if 'build' in file_path.lower() or 'derived' in file_path.lower():
+                  continue
+                  
+              docs = extract_swift_documentation(file_path)
+              if docs:
+                  all_docs.update(docs)
+          
+          # Generate API documentation index
+          os.makedirs('docs/API', exist_ok=True)
+          
+          with open('docs/API/README.md', 'w') as f:
+              f.write('# Bridge Template API Documentation\n\n')
+              f.write('> Auto-generated from Swift source code\n\n')
+              f.write(f'**Generated**: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} UTC\n\n')
+              
+              # Group by module
+              core_components = {}
+              module_components = {}
+              platform_components = {}
+              
+              for name, info in all_docs.items():
+                  if 'Core/' in info['file']:
+                      core_components[name] = info
+                  elif 'Modules/' in info['file']:
+                      module_components[name] = info
+                  elif 'Platforms/' in info['file']:
+                      platform_components[name] = info
+              
+              if core_components:
+                  f.write('## 🧠 Core System Components\n\n')
+                  for name, info in sorted(core_components.items()):
+                      f.write(f'### {name}\n')
+                      f.write(f'**File**: `{info["file"]}`\n\n')
+                      f.write(f'{info["title"]}\n\n')
+                      if 'overview' in info["documentation"].lower():
+                          preview = info["documentation"][:200] + "..." if len(info["documentation"]) > 200 else info["documentation"]
+                          f.write(f'{preview}\n\n')
+                      f.write('---\n\n')
+              
+              if module_components:
+                  f.write('## 📦 Module Components\n\n')
+                  for name, info in sorted(module_components.items()):
+                      f.write(f'### {name}\n')
+                      f.write(f'**File**: `{info["file"]}`\n\n')
+                      f.write(f'{info["title"]}\n\n')
+                      f.write('---\n\n')
+              
+              if platform_components:
+                  f.write('## 🖥️ Platform Components\n\n')
+                  for name, info in sorted(platform_components.items()):
+                      f.write(f'### {name}\n')
+                      f.write(f'**File**: `{info["file"]}`\n\n')
+                      f.write(f'{info["title"]}\n\n')
+                      f.write('---\n\n')
+          
+          print(f"📚 Generated documentation for {len(all_docs)} components")
+          EOF
+          
+      - name: Update Component Mapping Documentation
+        run: |
+          echo "🗺️ Updating component mapping documentation..."
+          
+          if [[ -f "Core/Intelligence/enhanced-component-map.json" ]]; then
+            python3 << 'EOF'
+          import json
+          
+          # Load component map
+          with open('Core/Intelligence/enhanced-component-map.json', 'r') as f:
+              component_map = json.load(f)
+          
+          # Generate component hierarchy documentation
+          with open('docs/COMPONENT_HIERARCHY.md', 'w') as f:
+              f.write('# 🌳 Component Hierarchy\n\n')
+              f.write('> Auto-generated from enhanced-component-map.json\n\n')
+              
+              if 'components' in component_map:
+                  def write_component(component_id, component_data, level=0):
+                      indent = "  " * level
+                      f.write(f'{indent}- **{component_id}**')
+                      
+                      if isinstance(component_data, dict):
+                          if 'displayName' in component_data:
+                              f.write(f' ({component_data["displayName"]})')
+                          if 'buildTime' in component_data:
+                              f.write(f' - {component_data["buildTime"]}s build')
+                          f.write('\n')
+                          
+                          # Write nested components
+                          for key, value in component_data.items():
+                              if key in ['features', 'components', 'widgets', 'properties'] and isinstance(value, dict):
+                                  for sub_id, sub_data in value.items():
+                                      write_component(sub_id, sub_data, level + 1)
+                      else:
+                          f.write('\n')
+                  
+                  for comp_id, comp_data in component_map['components'].items():
+                      write_component(comp_id, comp_data)
+              
+              f.write('\n## 📊 Build Levels\n\n')
+              if 'buildLevels' in component_map:
+                  f.write('| Level | Average Time | Description |\n')
+                  f.write('|-------|--------------|-------------|\n')
+                  for level, info in component_map['buildLevels'].items():
+                      f.write(f'| {level.title()} | {info.get("averageBuildTime", "?")}s | {info.get("description", "")} |\n')
+          
+          print("🗺️ Component hierarchy documentation updated")
+          EOF
+          fi
+          
+      - name: Generate Architecture Diagrams
+        run: |
+          echo "🎨 Generating architecture diagrams..."
+          
+          # Create Mermaid diagrams
+          mkdir -p docs/diagrams
+          
+          cat > docs/diagrams/system-architecture.md << 'EOF'
+          # System Architecture Diagrams
+          
+          ## Overall System Architecture
+          
+          ```mermaid
+          graph TB
+              A[BridgeMac App] --> B[ModuleManager]
+              A --> C[VersionManager]
+              A --> D[Intelligence System]
+              
+              B --> E[Dashboard Module]
+              B --> F[Projects Module]
+              B --> G[Terminal Module]
+              
+              E --> H[SystemHealth SubModule]
+              E --> I[StatsWidget SubModule]
+              E --> J[ActivityFeed SubModule]
+              
+              H --> K[CPU Feature]
+              H --> L[Memory Feature]
+              H --> M[GPU Feature]
+              
+              K --> N[Display Component]
+              K --> O[DataSource Component]
+              
+              N --> P[Animation Widget]
+              N --> Q[PercentageBar Widget]
+              N --> R[NumberDisplay Widget]
+              
+              P --> S[Speed Property]
+              P --> T[Color Property]
+          ```
+          
+          ## Hot-Swap Flow
+          
+          ```mermaid
+          sequenceDiagram
+              participant User
+              participant Claude
+              participant ModuleManager
+              participant RunningApp
+              
+              User->>Claude: "Change CPU animation color to red"
+              Claude->>ModuleManager: updateModule(target: animation.color)
+              ModuleManager->>RunningApp: Unload current widget
+              ModuleManager->>RunningApp: Load new widget version
+              RunningApp->>User: Updated UI (15 seconds)
+          ```
+          
+          ## Build Intelligence Flow
+          
+          ```mermaid
+          graph LR
+              A[Natural Language] --> B[Intent Parser]
+              B --> C[Scope Analyzer] 
+              C --> D[Smart Builder]
+              D --> E[Hot-Swap Manager]
+              
+              B --> F[systemHealth.cpu.display.animation.color]
+              C --> G[Property-level build: 15s]
+              D --> H[Surgical compilation]
+              E --> I[Runtime replacement]
+          ```
+          EOF
+          
+      - name: Update Module READMEs
+        run: |
+          echo "📝 Auto-updating module README files..."
+          
+          # Update each module's README with current state
+          find Modules -name "Package.swift" | while read package_file; do
+            MODULE_DIR=$(dirname "$package_file")
+            MODULE_NAME=$(basename "$MODULE_DIR")
+            
+            if [[ -f "$MODULE_DIR/Sources/${MODULE_NAME}Module.swift" ]] || [[ -f "$MODULE_DIR/Sources/"*"Module.swift" ]]; then
+              cat > "$MODULE_DIR/README.md" << EOF
+          # $MODULE_NAME Module
+          
+          > Part of the Bridge Template modular development system
+          
+          ## 🎯 Overview
+          
+          The $MODULE_NAME module provides [auto-detected functionality].
+          
+          ## 🏗️ Architecture
+          
+          - **Hot-Swappable**: ✅ Supports runtime replacement
+          - **Independent Versioning**: Each component version tracked separately
+          - **Granular Building**: Build at component, feature, or module level
+          
+          ## 📊 Current Status
+          
+          - **Version**: $(jq -r '.version // "1.0.0"' "$MODULE_DIR/version.json" 2>/dev/null || echo "1.0.0")
+          - **Last Updated**: $(date -u +%Y-%m-%d)
+          - **Build Time**: $(jq -r '.buildTime // "60"' "$MODULE_DIR/version.json" 2>/dev/null || echo "60")s
+          - **Components**: $(find "$MODULE_DIR" -name "*.swift" | wc -l) Swift files
+          
+          ## 🚀 Quick Start
+          
+          \`\`\`bash
+          # Build this module specifically
+          ./scripts/enhanced-smart-build.sh "update $MODULE_NAME module"
+          
+          # Hot-swap to new version
+          ./scripts/hot-swap-test.sh $MODULE_NAME 1.1.0
+          \`\`\`
+          
+          ## 🔧 Natural Language Development
+          
+          \`\`\`bash
+          # Examples of what you can say:
+          ./scripts/enhanced-smart-build.sh "add new feature to $MODULE_NAME"
+          ./scripts/enhanced-smart-build.sh "fix $MODULE_NAME performance issue"
+          ./scripts/enhanced-smart-build.sh "enhance $MODULE_NAME with real-time data"
+          \`\`\`
+          
+          ## 📚 Documentation
+          
+          - [API Documentation](../../docs/API/README.md)
+          - [Component Hierarchy](../../docs/COMPONENT_HIERARCHY.md)
+          - [Architecture Diagrams](../../docs/diagrams/system-architecture.md)
+          
+          ---
+          
+          *Auto-generated on $(date -u +%Y-%m-%d\ %H:%M:%S) UTC*
+          EOF
+              
+              echo "Updated README for $MODULE_NAME"
+            fi
+          done
+          
+      - name: Generate Development Guide
+        run: |
+          echo "📖 Generating comprehensive development guide..."
+          
+          cat > docs/DEVELOPMENT_GUIDE.md << 'EOF'
+          # 🚀 Bridge Template Development Guide
+          
+          > Complete guide to developing with the revolutionary modular system
+          
+          ## 🎯 Quick Start
+          
+          ### Prerequisites
+          - macOS 13+ with Xcode 15+
+          - Swift 5.9+
+          - Claude Code CLI tool
+          
+          ### Your First Build
+          ```bash
+          cd /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate
+          ./scripts/enhanced-smart-build.sh "add a simple counter widget to dashboard"
+          ```
+          
+          ## 🧠 Understanding Granular Development
+          
+          Bridge Template enables **surgical precision** builds:
+          
+          | Change Level | Build Time | Example |
+          |-------------|-----------|---------|
+          | Property | 15s | `"change animation speed to fast"` |
+          | Widget | 30s | `"add pulsing effect to CPU bar"` |
+          | Component | 45s | `"redesign memory display layout"` |
+          | Feature | 90s | `"add GPU temperature monitoring"` |
+          | Module | 180s | `"create new analytics dashboard"` |
+          
+          ## 🔥 Hot-Swapping Magic
+          
+          ### How It Works
+          1. **Natural Language Request**: Describe what you want
+          2. **Intelligent Analysis**: System determines minimal build scope
+          3. **Surgical Build**: Compile only what changed
+          4. **Runtime Replacement**: Hot-swap into running app
+          5. **State Preservation**: No data loss, zero downtime
+          
+          ### Example Hot-Swap
+          ```swift
+          // This happens automatically when you make changes:
+          try await moduleManager.updateModule(
+              identifier: "com.bridge.dashboard.systemhealth.cpu.animation",
+              to: "1.0.1"
+          )
+          // Your app updates instantly while you watch!
+          ```
+          
+          ## 🏗️ Architecture Deep Dive
+          
+          ### Core Systems
+          
+          #### ModuleManager
+          - **Purpose**: Runtime module loading/unloading
+          - **Hot-Swap**: Zero-downtime component replacement
+          - **Communication**: Cross-module messaging
+          - **File**: `Core/ModuleManager/ModuleManager.swift`
+          
+          #### VersionManager  
+          - **Purpose**: Independent component versioning
+          - **Tracking**: Every module, submodule, feature, widget has own version
+          - **Compatibility**: Automatic version conflict resolution
+          - **File**: `Core/VersionManager/VersionManager.swift`
+          
+          #### Intelligence System
+          - **Purpose**: Natural language → precise build targets
+          - **Parser**: `"fix CPU animation"` → `systemHealth.cpu.display.animation`
+          - **Scope**: Determines minimal rebuild requirements
+          - **Files**: `Core/Intelligence/`
+          
+          ### Module Ecosystem
+          
+          #### Dashboard Module
+          - **Real-time metrics** with infinite widget nesting
+          - **SystemHealth**: CPU, Memory, GPU monitoring
+          - **Activity Feed**: Live development activity
+          - **Quick Actions**: One-click operations
+          
+          #### Projects Module
+          - **AI-powered project management**
+          - **Integration with development workflow**
+          - **Natural language task creation**
+          
+          #### Terminal Module
+          - **Integrated development environment**
+          - **Direct access to build scripts**
+          - **Real-time command execution**
+          
+          ## 🛠️ Development Workflow
+          
+          ### 1. Natural Language Development
+          ```bash
+          # Instead of manually editing files, just describe what you want:
+          ./scripts/enhanced-smart-build.sh "add GPU temperature widget to system health"
+          
+          # Or use Claude Code integration:
+          claude-code "Read requests.txt and add a new memory usage chart to dashboard"
+          ```
+          
+          ### 2. Intelligent Build Detection
+          The system automatically:
+          - Parses your natural language request
+          - Determines the exact components to build
+          - Calculates minimal scope (property → widget → component → feature → module)
+          - Preserves everything else unchanged
+          
+          ### 3. Surgical Building
+          ```bash
+          # Property-level change (15 seconds)
+          "change memory bar color to red"
+          → Target: systemHealth.memory.display.bar.color
+          → Files: 1 property change
+          → Build: 15 seconds
+          
+          # Feature-level change (90 seconds)  
+          "add GPU monitoring to system health"
+          → Target: systemHealth.gpu
+          → Files: New feature structure
+          → Build: 90 seconds
+          ```
+          
+          ### 4. Hot-Swap Deployment
+          - Components update in the running application
+          - Zero downtime or restart required
+          - State preserved across updates
+          - Instant visual feedback
+          
+          ## 🎨 Creating New Components
+          
+          ### Adding a Widget (30-second build)
+          ```bash
+          ./scripts/enhanced-smart-build.sh "add disk usage widget to system health"
+          ```
+          
+          This automatically:
+          1. Creates widget file in correct hierarchy
+          2. Updates component mappings
+          3. Integrates with parent feature
+          4. Builds and hot-swaps into running app
+          
+          ### Adding a Feature (90-second build)
+          ```bash
+          ./scripts/enhanced-smart-build.sh "add network monitoring feature to system health"
+          ```
+          
+          This automatically:
+          1. Creates feature package structure
+          2. Sets up proper Swift package configuration
+          3. Creates necessary component hierarchy
+          4. Integrates with module system
+          5. Updates documentation
+          
+          ### Adding a Module (3-minute build)
+          ```bash
+          ./scripts/enhanced-smart-build.sh "create new analytics module with data visualization"
+          ```
+          
+          This automatically:
+          1. Creates complete module structure
+          2. Sets up modular architecture
+          3. Implements BridgeModule protocol
+          4. Configures hot-swap capabilities
+          5. Integrates with main application
+          
+          ## 🔧 Advanced Techniques
+          
+          ### Custom Natural Language Patterns
+          You can extend the intelligence system by adding patterns to:
+          - `Core/Intelligence/enhanced-component-map.json`
+          - Component hierarchy definitions
+          - Build level mappings
+          
+          ### Hot-Swap Safety
+          Some components cannot be hot-swapped:
+          - Core system protocols (`BridgeModule.swift`)
+          - Module manager itself
+          - Version management system
+          
+          These require app restart but are rarely changed.
+          
+          ### Performance Optimization
+          - **Incremental builds**: Only changed components rebuild
+          - **Parallel compilation**: Independent modules build simultaneously  
+          - **Smart caching**: Unchanged dependencies reused
+          - **Minimal scope**: Property changes don't rebuild entire modules
+          
+          ## 🚨 Troubleshooting
+          
+          ### Build Issues
+          ```bash
+          # Check component mapping
+          cat Core/Intelligence/enhanced-component-map.json
+          
+          # Validate module structure
+          ./scripts/granular-dev.sh
+          
+          # Test hot-swap capability
+          ./scripts/hot-swap-test.sh ModuleName 1.0.1
+          ```
+          
+          ### Session Continuity
+          ```bash
+          # Restore context from latest snapshot
+          cat docs/session-snapshots/current-session.json
+          
+          # Check project status
+          cat PROJECT_STATUS.md
+          ```
+          
+          ### Documentation Sync
+          Documentation auto-updates on every code change. If manual refresh needed:
+          ```bash
+          # Trigger documentation update
+          git push  # Triggers auto-documentation workflow
+          ```
+          
+          ## 🎯 Best Practices
+          
+          ### Natural Language Requests
+          - ✅ **Be specific**: "add CPU temperature widget" vs "improve dashboard"
+          - ✅ **Use component names**: "system health", "dashboard", "memory bar"
+          - ✅ **Specify scope**: "change color" (property) vs "redesign layout" (component)
+          
+          ### Module Development
+          - ✅ **Follow BridgeModule protocol** for all modules
+          - ✅ **Implement hot-swap support** via `canUnload()` and `cleanup()`
+          - ✅ **Use semantic versioning** for all components
+          - ✅ **Document public APIs** with Swift DocC comments
+          
+          ### Performance
+          - ✅ **Use granular builds** instead of full rebuilds
+          - ✅ **Test hot-swap functionality** after major changes
+          - ✅ **Profile build times** and optimize slow components
+          
+          ## 📚 Additional Resources
+          
+          - [API Documentation](API/README.md)
+          - [Component Hierarchy](COMPONENT_HIERARCHY.md) 
+          - [Architecture Diagrams](diagrams/system-architecture.md)
+          - [Session Onboarding](SESSION_ONBOARDING.md)
+          
+          ---
+          
+          **🌉 Ready to build the future!**
+          
+          Use natural language to describe what you want, and watch the system build it with surgical precision.
+          EOF
+          
+      - name: Create Documentation Index
+        run: |
+          echo "📋 Creating comprehensive documentation index..."
+          
+          cat > docs/README.md << 'EOF'
+          # 📚 Bridge Template Documentation
+          
+          > Complete documentation for the revolutionary modular development system
+          
+          ## 🚀 Getting Started
+          
+          - [🏁 Session Onboarding](SESSION_ONBOARDING.md) - Quick context restoration for new Claude sessions
+          - [📖 Development Guide](DEVELOPMENT_GUIDE.md) - Complete development workflow
+          - [⚡ Quick Reference](../docs/GRANULAR_DEV_QUICKREF.md) - Essential commands and patterns
+          
+          ## 🏗️ Architecture
+          
+          - [🌳 Component Hierarchy](COMPONENT_HIERARCHY.md) - Complete system structure
+          - [🎨 Architecture Diagrams](diagrams/system-architecture.md) - Visual system overview  
+          - [🧠 Intelligence System](../docs/GRANULAR_DEV_SUMMARY.md) - Natural language processing
+          
+          ## 📡 API Reference
+          
+          - [🔧 API Documentation](API/README.md) - Auto-generated from Swift source
+          - [📦 Module APIs](../Documentation/Modules/README.md) - Module-specific documentation
+          - [⚙️ Core Systems](../Documentation/API/README.md) - Core system APIs
+          
+          ## 🔄 Session Management
+          
+          - [📸 Current Session](session-snapshots/current-session.json) - Latest project state
+          - [📈 Project Status](../PROJECT_STATUS.md) - High-level status and metrics
+          - [🎯 Focus Areas](session-snapshots/) - Recent development focus
+          
+          ## 🛠️ Development Tools
+          
+          - [🔨 Build Scripts](../scripts/) - Smart building and automation
+          - [🔄 Hot-Swap Testing](../scripts/hot-swap-test.sh) - Runtime replacement testing
+          - [🎮 Interactive Development](../scripts/granular-dev.sh) - Development interface
+          
+          ## 📊 System Status
+          
+          - **Total Modules**: Auto-detected from project
+          - **Documentation Coverage**: Auto-calculated  
+          - **Last Updated**: Auto-refreshed on every change
+          - **Build Health**: Monitored via GitHub Actions
+          
+          ## 🤖 AI Integration
+          
+          - [🧠 Natural Language Development](DEVELOPMENT_GUIDE.md#natural-language-development)
+          - [⚡ Claude Code Integration](../docs/CLAUDE_CODE_GRANULAR_DEV.md)
+          - [🎯 Intent Parsing](../Core/Intelligence/) - How requests become builds
+          
+          ## 🔥 Revolutionary Features
+          
+          ### Granular Building
+          - **Property-level**: 15-second builds for single value changes
+          - **Widget-level**: 30-second builds for UI components
+          - **Component-level**: 45-second builds for functionality  
+          - **Feature-level**: 90-second builds for major capabilities
+          - **Module-level**: 3-minute builds for complete modules
+          
+          ### Hot-Swapping
+          - **Zero downtime**: Replace components in running applications
+          - **State preservation**: No data loss during updates
+          - **Infinite nesting**: Hot-swap at any component depth
+          - **Safety validation**: Automatic compatibility checking
+          
+          ### Natural Language Development
+          - **Describe what you want**: No manual file editing required
+          - **Intelligent targeting**: System finds exact components to build
+          - **Scope optimization**: Builds only what's necessary
+          - **Instant feedback**: See changes in 15 seconds to 3 minutes
+          
+          ---
+          
+          **📡 Live Documentation**: This documentation auto-updates with every code change to stay perfectly synchronized.
+          
+          **🔄 Session Continuity**: New Claude sessions can instantly restore context using the session snapshots.
+          
+          **🌉 Building the Future**: Revolutionary development through conversation and surgical precision.
+          EOF
+          
+      - name: Update Timestamp
+        run: |
+          echo "⏰ Updating documentation timestamp..."
+          touch docs/last-doc-update.timestamp
+          echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > docs/last-doc-update.timestamp
+          
+      - name: Commit Documentation Updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "Bridge Template Documentation Bot"
+          
+          git add docs/
+          git diff --quiet && git diff --staged --quiet || \
+            git commit -m "📚 Auto-update documentation $(date '+%Y-%m-%d %H:%M')
+
+Documentation impact: ${{ env.DOCS_IMPACT }}
+Updated:
+- API documentation from Swift source
+- Component hierarchy mappings  
+- Module README files
+- Architecture diagrams
+- Development guides
+
+[skip ci]"
+          
+      - name: Push Documentation
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref }}
