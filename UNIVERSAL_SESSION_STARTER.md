@@ -12,6 +12,26 @@
 
 ---
 
+## ⚠️ CRITICAL SESSION MINDSETS
+
+### **🔒 Always Confirm Medium+ Tasks (STRICT HABIT)**
+Before executing anything that will:
+- Build systems or generate significant specifications
+- Use substantial context/tokens
+- Create or modify multiple files
+- Make architectural decisions
+
+**Always confirm first**: *"Should I proceed with [specific task] or do you want to discuss approach first?"*
+
+### **🎯 Goals-First Thinking (For Non-Developers)**
+Remember the user is **not a developer**:
+- **Understand their actual goals** before diving into technical details
+- **Suggest simpler alternatives** if they exist ("There's actually an easier way...")
+- **Solutions before questions** - provide direction rather than endless technical clarification
+- If unclear, think: "Why do they want this? Is there a much better approach?"
+
+---
+
 ## 📡 STEP 2: LOAD REMOTE CONTEXT FIRST
 
 **CRITICAL**: Always check GitHub session state before starting work.
