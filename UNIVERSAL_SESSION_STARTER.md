@@ -32,24 +32,49 @@ Remember the user is **not a developer**:
 
 ---
 
-## 📡 STEP 2: LOAD REMOTE CONTEXT FIRST
+## 📡 STEP 2: LOAD CONTEXT FIRST (MANDATORY)
 
-**CRITICAL**: Always check GitHub session state before starting work.
+**CRITICAL**: Always read the session onboarding document FIRST:
 
-### **Read Current Session State:**
-📖 https://github.com/Verborom/BridgeTemplate/blob/main/docs/session-snapshots/current-session.json
+### **🚨 MANDATORY FIRST READ:**
+📖 **SESSION_ONBOARDING.md** - Complete context restoration guide
+```
+/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/docs/SESSION_ONBOARDING.md
+```
 
-### **Check Project Status:**
-📊 https://github.com/Verborom/BridgeTemplate/blob/main/PROJECT_STATUS.md
+This document contains:
+- Current project state and focus
+- Git/sync system understanding (CRITICAL)
+- Documentation requirements (MANDATORY)
+- Role-specific guidelines
+- Architecture knowledge
+- Session continuity protocols
 
-### **Review Latest Documentation:**
-📚 https://github.com/Verborom/BridgeTemplate/blob/main/docs/SESSION_ONBOARDING.md
+### **🔄 Check Git Sync System:**
+📖 **GIT_SYNC_SYSTEM.md** - Complete git workflow documentation
+```
+/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/docs/GIT_SYNC_SYSTEM.md
+```
 
-**Why GitHub First?**
-- Remote state is the source of truth for session continuity
-- Shows what was last worked on across all sessions
-- Prevents duplicate work and context loss
-- Integrates with automation systems
+This document explains:
+- How git/GitHub sync works (Option 3: Staged Manual)
+- Why auto-sync is disabled (safety + professionalism)
+- Commit message standards
+- Documentation requirements for auto-generation
+- Session continuity integration
+
+### **📊 Check Current Project Status:**
+📈 **PROJECT_STATUS.md** - Latest project state
+```
+/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/PROJECT_STATUS.md
+```
+
+**Why Session Onboarding First?**
+- Local state is the source of truth for current system
+- Shows current development focus and recent changes
+- Explains git workflow and documentation requirements
+- Prevents context loss between sessions
+- Critical for understanding automation systems
 
 ---
 
@@ -62,54 +87,53 @@ Transform user requests into detailed technical specifications for Claude Code e
 - **Location**: `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/`
 - **System**: Revolutionary modular development with 15s-3min granular builds
 - **Architecture**: Infinite nesting modules with hot-swap capabilities
-- **Vision**: Total non-developers build advanced apps through conversation
+- **Git**: Staged manual workflow (Option 3) - NO auto-sync
+- **Docs**: Auto-generated from Swift DocC comments
 
-### **Your Workflow:**
-1. **Check Remote State**: Read GitHub session snapshots for current focus
-2. **Understand Request**: Parse user's natural language requirements
-3. **Generate Specification**: Create detailed technical requirements
-4. **Write to requests.txt**: Place specification for Claude Code
-5. **Create Claude Code Prompt**: Tell Claude Code exactly what to do
+### **Your Enhanced Workflow:**
+1. **Read SESSION_ONBOARDING.md** - Get complete current context
+2. **Read GIT_SYNC_SYSTEM.md** - Understand workflow requirements
+3. **Understand Request** - Parse user's natural language requirements
+4. **Generate Specification** - Create detailed technical requirements INCLUDING documentation standards
+5. **Write to requests.txt** - Place specification for Claude Code
+6. **Create Claude Code Prompt** - Tell Claude Code exactly what to do
 
 ### **Key Responsibilities:**
 - ✅ **Strategic Planning**: Architecture decisions and system design
 - ✅ **Request Generation**: Transform ideas into actionable specifications
-- ✅ **Documentation**: Ensure everything is thoroughly documented
+- ✅ **Documentation Standards**: Ensure all specs include Swift DocC requirements
+- ✅ **Git Workflow Integration**: Include commit and sync instructions
 - ✅ **Quality Control**: Review and validate Claude Code output
 - ❌ **Never Code Directly**: That's Claude Code's job
 
 ### **Critical Documentation Requirements:**
 ```markdown
-EVERY request to Claude Code must include:
-"MANDATORY: Document everything thoroughly with Swift DocC comments. 
-Every class, function, and property must have comprehensive documentation 
-for auto-generated docs. Include overview, usage examples, and version history."
+MANDATORY: All Swift code must have comprehensive DocC comments:
+/// # ComponentName
+/// Brief description
+/// ## Overview
+/// Detailed explanation
+/// ## Usage
+/// ```swift
+/// example code
+/// ```
+
+EVERY class, function, and property must be documented for auto-generation.
+Include commit instructions following GIT_SYNC_SYSTEM.md workflow.
 ```
 
 ### **Essential References:**
-- **Granular Development**: `docs/GRANULAR_DEV_SUMMARY.md`
+- **Session Onboarding**: `docs/SESSION_ONBOARDING.md` (MUST READ FIRST)
+- **Git Workflow**: `docs/GIT_SYNC_SYSTEM.md` (CRITICAL for sync)
 - **Current Architecture**: `docs/knowledge-base/COMPLETE_REFERENCE.md`
-- **Session State**: Latest GitHub session snapshot
-- **Project Status**: `PROJECT_STATUS.md`
-
-### **Example Desktop Claude Workflow:**
-```markdown
-User: "Add a CPU monitor to the dashboard"
-
-Your Process:
-1. Check GitHub: What's current focus? Any related work in progress?
-2. Understand: User wants new widget in existing dashboard module
-3. Specify: Create detailed requirements in requests.txt
-4. Document: Ensure commenting requirements are explicit
-5. Prompt Claude Code: "Read requests.txt and execute using granular build system"
-```
+- **Granular Development**: `docs/GRANULAR_DEV_SUMMARY.md`
 
 ---
 
 ## ⌨️ FOR CLAUDE CODE: Technical Execution Role
 
 ### **Your Mission:**
-Execute precise technical builds using the granular development system.
+Execute precise technical builds using the granular development system with perfect documentation and git workflow.
 
 ### **CRITICAL: NEVER FULL REBUILDS**
 The Bridge Template has a revolutionary granular build system:
@@ -121,19 +145,24 @@ The Bridge Template has a revolutionary granular build system:
 
 **You must ALWAYS use this system, never rebuild everything!**
 
-### **Your Workflow:**
-1. **Check Remote State**: Read GitHub session snapshots for context
-2. **Read Work Request**: Check `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/requests.txt`
-3. **Analyze Scope**: Determine minimal build scope (property→widget→component→feature→module)
-4. **Execute Granular Build**: Use `./scripts/enhanced-smart-build.sh "natural language request"`
-5. **Document Everything**: Comprehensive Swift DocC comments on ALL code
+### **Your Enhanced Workflow:**
+1. **Read SESSION_ONBOARDING.md** - Get complete project context and git workflow
+2. **Read GIT_SYNC_SYSTEM.md** - Understand commit and sync requirements  
+3. **Read Work Request** - Check `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/requests.txt`
+4. **Analyze Scope** - Determine minimal build scope (property→widget→component→feature→module)
+5. **Execute Granular Build** - Use `./scripts/enhanced-smart-build.sh "natural language request"`
+6. **Document Everything** - Comprehensive Swift DocC comments on ALL code
+7. **Test Functionality** - Verify everything works including hot-swap
+8. **Commit & Sync** - Follow git workflow from GIT_SYNC_SYSTEM.md
 
 ### **Key Responsibilities:**
 - ✅ **Granular Building**: Use 15s-3min targeted builds only
 - ✅ **Technical Execution**: Build exactly what's specified
-- ✅ **Comprehensive Documentation**: Every line of code documented
+- ✅ **Comprehensive Documentation**: Every line of code documented with Swift DocC
 - ✅ **Hot-Swap Implementation**: Enable runtime component replacement
+- ✅ **Professional Git Workflow**: Follow staged manual process
 - ❌ **Never Full Rebuilds**: Unless explicitly required for core changes
+- ❌ **Never Auto-Sync**: Manual commits only for safety
 
 ### **MANDATORY Documentation Standards:**
 ```swift
@@ -167,6 +196,22 @@ public class ModuleName: BridgeModule {
 }
 ```
 
+### **Git Workflow (CRITICAL):**
+```bash
+# After completing work:
+git add .
+git commit -m "Clear description of changes
+
+Detailed explanation:
+- What was built and why  
+- Impact on other components
+- Testing performed
+- Documentation updated"
+git push
+
+# This triggers auto-documentation and session continuity updates
+```
+
 ### **Essential Commands:**
 ```bash
 # Check current project state
@@ -183,40 +228,38 @@ cat requests.txt
 
 # Test hot-swap functionality
 ./scripts/hot-swap-test.sh ModuleName 1.0.1
+
+# Check git status
+git status
+git log --oneline -5
 ```
 
 ### **Essential References:**
+- **Session Onboarding**: `docs/SESSION_ONBOARDING.md` (MUST READ FIRST)
+- **Git Workflow**: `docs/GIT_SYNC_SYSTEM.md` (CRITICAL for commits)
 - **Granular Build Guide**: `docs/CLAUDE_CODE_GRANULAR_DEV.md`
 - **Architecture Patterns**: `docs/knowledge-base/COMPLETE_REFERENCE.md`
-- **Build Scope Examples**: `docs/GRANULAR_DEV_SUMMARY.md`
-
-### **Example Claude Code Workflow:**
-```bash
-1. Read GitHub session state for context
-2. cat requests.txt  # Read Desktop Claude's specifications
-3. Analyze: "Add CPU monitor" = dashboard.widgets.cpuMonitor = submodule scope
-4. ./scripts/enhanced-smart-build.sh "add CPU usage monitor widget to dashboard"
-5. Result: 60-second build, hot-swap into running app, comprehensive docs
-```
 
 ---
 
 ## 🔄 UNIVERSAL SESSION CONTINUITY
 
 ### **Every Session Starts With:**
-1. **GitHub Context Check**: Read latest session snapshot for current focus
-2. **Role Detection**: Understand if you're Desktop Claude or Claude Code
-3. **Current State Assessment**: What was last worked on? Any incomplete tasks?
-4. **Integration Verification**: Are all systems (GitHub, local project) in sync?
+1. **Session Onboarding**: Read `docs/SESSION_ONBOARDING.md` for complete context
+2. **Git System Understanding**: Read `docs/GIT_SYNC_SYSTEM.md` for workflow
+3. **Role Detection**: Understand if you're Desktop Claude or Claude Code
+4. **Current State Assessment**: What was last worked on? Any incomplete tasks?
+5. **Documentation Requirements**: Understand Swift DocC comment standards
 
 ### **Every Session Ends With:**
-1. **State Update**: Update session snapshots with current progress
-2. **Documentation Check**: Ensure all work is properly documented
-3. **Next Session Prep**: Set context for future Claude sessions
-4. **Integration Status**: Verify all systems remain connected
+1. **Work Completion**: Finish assigned tasks completely
+2. **Documentation Check**: Ensure all code has comprehensive DocC comments
+3. **Git Workflow**: Follow staged manual commit process
+4. **Quality Verification**: Test functionality and hot-swap capability
+5. **Context Preservation**: Changes automatically update session continuity
 
 ### **Emergency Recovery:**
-If GitHub session state is unavailable:
+If session onboarding documents are unavailable:
 - **Desktop Claude**: Read `docs/knowledge-base/COMPLETE_REFERENCE.md`
 - **Claude Code**: Read `docs/CLAUDE_CODE_GRANULAR_DEV.md`
 - **Both**: Check `PROJECT_STATUS.md` for high-level context
@@ -226,25 +269,30 @@ If GitHub session state is unavailable:
 ## 🎯 QUICK ACTION CHECKLIST
 
 ### **Desktop Claude Quick Start:**
-- [ ] Read GitHub session snapshot for current context
-- [ ] Review user request and project status
-- [ ] Generate detailed specification with documentation requirements
-- [ ] Write specification to `requests.txt`
-- [ ] Create Claude Code prompt with granular build instructions
+- [ ] Read `docs/SESSION_ONBOARDING.md` for current context
+- [ ] Read `docs/GIT_SYNC_SYSTEM.md` for workflow understanding
+- [ ] Review user request and current project status
+- [ ] Generate detailed specification including documentation requirements
+- [ ] Write specification to `requests.txt` with git workflow instructions
+- [ ] Create Claude Code prompt following established patterns
 
 ### **Claude Code Quick Start:**
-- [ ] Read GitHub session snapshot for current context
+- [ ] Read `docs/SESSION_ONBOARDING.md` for project context and requirements
+- [ ] Read `docs/GIT_SYNC_SYSTEM.md` for git workflow and commit standards
 - [ ] Check `requests.txt` for work specifications
 - [ ] Analyze build scope (property→widget→component→feature→module)
 - [ ] Execute using `./scripts/enhanced-smart-build.sh`
 - [ ] Document everything comprehensively with Swift DocC
+- [ ] Test functionality and hot-swap capability
+- [ ] Follow git workflow: commit with clear message and push
 
 ### **Both Claudes Always:**
-- [ ] GitHub session state checked FIRST
+- [ ] Session onboarding documents read FIRST
+- [ ] Git workflow understanding confirmed
 - [ ] Role-appropriate workflow activated
-- [ ] Documentation standards enforced
-- [ ] Cross-session continuity maintained
-- [ ] Integration status verified
+- [ ] Documentation standards enforced (Swift DocC comments mandatory)
+- [ ] Professional git workflow followed (staged manual, no auto-sync)
+- [ ] Session continuity maintained through documentation and commits
 
 ---
 
@@ -255,14 +303,17 @@ If GitHub session state is unavailable:
 - **Hot-Swapping**: Update running apps without restart
 - **Natural Language**: Describe what you want, get working code
 - **Infinite Nesting**: Components within components within components
-- **AI-Powered**: Built entirely through Claude conversations
+- **Perfect Documentation**: Auto-generated from comprehensive Swift DocC comments
+- **Session Continuity**: Context preserved across all Claude interactions
+- **Professional Git Workflow**: Staged manual commits for safety and quality
 
 **Success Metrics:**
-- ✅ 10x faster development cycles
-- ✅ Zero downtime updates
-- ✅ Natural language development
-- ✅ Perfect session continuity
-- ✅ Non-developers building advanced apps
+- ✅ 10x faster development cycles through granular builds
+- ✅ Zero downtime updates via hot-swapping
+- ✅ Natural language development interface
+- ✅ Perfect session continuity across Claude interactions
+- ✅ Professional git workflow with comprehensive documentation
+- ✅ Auto-generated documentation always current with code
 
 ---
 
@@ -270,8 +321,9 @@ If GitHub session state is unavailable:
 
 ### **Live Documentation:**
 - **Project Repository**: https://github.com/Verborom/BridgeTemplate
-- **Session Snapshots**: Auto-updated context for continuity
-- **GitHub Pages**: https://verborom.github.io/BridgeTemplate
+- **Session Onboarding**: `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/docs/SESSION_ONBOARDING.md`
+- **Git Workflow**: `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/docs/GIT_SYNC_SYSTEM.md`
+- **Auto-Generated Docs**: Auto-updated with every commit
 
 ### **Local References:**
 - **Project Location**: `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/`
@@ -281,11 +333,12 @@ If GitHub session state is unavailable:
 ### **Integration Status:**
 - ✅ **GitHub Repository**: Advanced automation and session continuity
 - ✅ **Local Project**: Revolutionary granular development system
-- ✅ **Documentation Pipeline**: Auto-generated from code comments
-- ✅ **Session Management**: Automated context preservation
+- ✅ **Documentation Pipeline**: Auto-generated from Swift DocC comments
+- ✅ **Session Management**: Perfect context preservation
+- ✅ **Git Workflow**: Professional staged manual process (Option 3)
 
 ---
 
 **🚀 Ready to revolutionize development? Your role-specific workflow starts now!**
 
-*This universal starter adapts to your role and loads current context automatically.*
+*This universal starter adapts to your role and loads current context through comprehensive session onboarding documents.*
