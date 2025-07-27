@@ -1,7 +1,5 @@
 import SwiftUI
-
-// NOTE: Terminal module would be imported here in production build
-// import Terminal
+import Terminal
 
 /// # BridgeMac Application
 ///
@@ -614,15 +612,34 @@ extension Color {
     static let bridgeBackground = Color(NSColor.windowBackgroundColor)
     static let bridgeTextPrimary = Color(NSColor.labelColor)
     static let bridgeTextSecondary = Color(NSColor.secondaryLabelColor)
+    static let bridgePrimary = Color.blue
 }
 
 /// Bridge Template typography
 struct BridgeTypography {
     static let largeTitle = Font.system(size: 28, weight: .bold, design: .default)
     static let title = Font.system(size: 24, weight: .semibold, design: .default)
+    static let title2 = Font.system(size: 20, weight: .semibold, design: .default)
     static let headline = Font.system(size: 16, weight: .medium, design: .default)
     static let body = Font.system(size: 14, weight: .regular, design: .default)
     static let caption = Font.system(size: 11, weight: .regular, design: .default)
+}
+
+/// Visual effect blur for macOS
+struct VisualEffectBlur: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = .behindWindow
+        view.state = .active
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+    }
 }
 
 /// Bridge Template gradients
@@ -655,5 +672,11 @@ extension LinearGradient {
         colors: [Color.gray.opacity(0.05), Color.gray.opacity(0.02)],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
+    )
+    
+    static let sidebarGradient = LinearGradient(
+        colors: [Color.black.opacity(0.9), Color.gray.opacity(0.1)],
+        startPoint: .top,
+        endPoint: .bottom
     )
 }

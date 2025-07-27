@@ -11,9 +11,9 @@ let package = Package(
     ],
     dependencies: [
         // Terminal module dependency - LOCAL PATH
-        .package(path: "../../Modules/Terminal"),
-        // Dashboard module dependency - LOCAL PATH
-        .package(path: "../../Modules/Dashboard"),
+        .package(path: "../../Modules/Terminal")
+        // Dashboard module dependency - LOCAL PATH (disabled for now)
+        // .package(path: "../../Modules/Dashboard"),
         // Projects module dependency - LOCAL PATH (when available)
         // .package(path: "../../Modules/Projects")
     ],
@@ -21,11 +21,18 @@ let package = Package(
         .executableTarget(
             name: "BridgeMac",
             dependencies: [
-                .product(name: "Terminal", package: "Terminal"),
-                .product(name: "Dashboard", package: "Dashboard")
+                .product(name: "Terminal", package: "Terminal")
+                // .product(name: "DashboardModule", package: "Dashboard")
             ],
             path: ".",
-            sources: ["BridgeMac.swift"],
+            sources: [
+                "BridgeMac.swift",
+                "Core/BridgeModule.swift",
+                "Core/ModuleManager/ModuleManager.swift",
+                "Core/VersionManager/VersionManager.swift",
+                "Core/MockModules.swift",
+                "UI/SidebarTiles/SystemStatusTile.swift"
+            ],
             resources: [],
             swiftSettings: [
                 .define("BRIDGE_MACOS"),

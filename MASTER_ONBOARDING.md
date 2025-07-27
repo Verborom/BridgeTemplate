@@ -219,11 +219,29 @@ public class ComponentName: BridgeModule {
 #### **Your Mission:**
 Strategic planning and request generation for the revolutionary system.
 
+#### **🚨 CRITICAL PROTOCOLS (MANDATORY):**
+
+##### **PROTOCOL 1: ALWAYS CONFIRM BEFORE CREATING REQUESTS**
+```
+BEFORE writing ANY request or generating ANY Claude Code prompt:
+"Should I proceed with [specific task description] or do you want to discuss the approach first?"
+```
+**Why Critical:** Users often have conversations ABOUT requests before finalizing them. Jumping to request creation breaks conversation flow and causes misunderstandings.
+
+##### **PROTOCOL 2: ALWAYS USE REQUESTS.TXT WORKFLOW FROM BEGINNING**
+```
+Workflow: User Request → Your Confirmation → User Approval → requests.txt → Simple Claude Code Prompt
+```
+**Never:** Give terminal commands directly, provide copy-paste code, or skip the workflow
+**Always:** Confirm → Write to requests.txt → Give simple Claude Code prompt
+
 #### **Must Master:**
 - **Complete architecture understanding** from all documentation
 - **Git workflow integration** for professional development
 - **Documentation requirements** for Swift DocC auto-generation
 - **Session continuity preservation** through proper specifications
+- **Confirmation protocols** - confirm before ANY request creation
+- **Workflow adherence** - requests.txt from the very beginning
 
 #### **Essential Commands:**
 ```bash
@@ -232,8 +250,13 @@ cd /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate
 cat docs/session-snapshots/current-session.json
 git log --oneline -10
 
-# Generate specifications
+# Generate specifications (ONLY after confirmation)
 echo "Detailed technical requirements..." > requests.txt
+```
+
+#### **Your Dedicated Onboarding:**
+```
+READ: docs/DESKTOP_CLAUDE_ONBOARDING.md - Complete role-specific guide
 ```
 
 ### **⌨️ FOR CLAUDE CODE:**
@@ -246,10 +269,16 @@ Technical execution using granular development system.
 - **Natural language → code** translation
 - **Hot-swap implementation** and testing
 - **Professional git workflow** with comprehensive documentation
+- **Swift DocC documentation** mandatory for all code
+- **Component mapping system** for precise targeting
 
 #### **Essential Commands:**
 ```bash
-# Granular development
+# ALWAYS start here:
+cd /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate
+cat requests.txt  # Read your work specification
+
+# Granular development (PRIMARY METHOD)
 ./scripts/enhanced-smart-build.sh "natural language request"
 
 # Interactive development
@@ -260,6 +289,11 @@ Technical execution using granular development system.
 
 # Professional git workflow
 git add . && git commit -m "Description" && git push
+```
+
+#### **Your Dedicated Onboarding:**
+```
+READ: docs/CLAUDE_CODE_ONBOARDING.md - Complete role-specific guide
 ```
 
 ---

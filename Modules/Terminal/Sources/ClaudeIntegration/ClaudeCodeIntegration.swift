@@ -194,10 +194,10 @@ public class ClaudeCodeIntegration: ObservableObject {
 public class ClaudeSession: ObservableObject, Identifiable, Codable {
     
     /// Unique session identifier
-    public let id = UUID().uuidString
+    public let id: String
     
     /// Session creation timestamp
-    public let createdAt = Date()
+    public let createdAt: Date
     
     /// Repository mastery level
     @Published public var masteryLevel: MasteryLevel = .none
@@ -213,6 +213,8 @@ public class ClaudeSession: ObservableObject, Identifiable, Codable {
     
     /// Initialize a new Claude session
     public init() {
+        self.id = UUID().uuidString
+        self.createdAt = Date()
         self.workingContext = WorkingContext()
         self.metadata = SessionMetadata()
     }

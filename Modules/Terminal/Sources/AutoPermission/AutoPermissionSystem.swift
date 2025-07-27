@@ -213,7 +213,7 @@ public class AutoPermissionSystem: ObservableObject {
         // Create grant
         let grant = PermissionGrant(
             id: UUID().uuidString,
-            permission: permission,
+            permission: PermissionWrapper(permission: permission),
             scope: scope,
             grantedAt: Date(),
             grantedBy: "AutoPermissionSystem"
@@ -342,7 +342,7 @@ public class AutoPermissionSystem: ObservableObject {
             
             // Determine scope based on configuration
             let scope = configuration.unattendedMode ?
-                PermissionScope.session(timeout: configuration.unattendedConfig?.sessionTimeout ?? .hours(1)) :
+                PermissionScope.session(timeout: configuration.unattendedConfig?.sessionTimeout ?? 3600) :
                 PermissionScope.single
             
             // Request new grant
@@ -408,7 +408,7 @@ public class AutoPermissionSystem: ObservableObject {
         ]
         
         for permission in developerPermissions {
-            _ = try? await grantPermission(permission, scope: .session(timeout: .hours(24)))
+            _ = try? await grantPermission(permission, scope: .session(timeout: 86400))
         }
     }
     

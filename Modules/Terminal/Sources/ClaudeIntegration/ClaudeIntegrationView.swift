@@ -655,7 +655,7 @@ struct CommandHistoryRow: View {
                 
                 Spacer()
                 
-                Text(entry.timestamp.formatted(.relative(presentation: .abbreviated)))
+                Text(entry.timestamp.formatted(.relative(presentation: .named)))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

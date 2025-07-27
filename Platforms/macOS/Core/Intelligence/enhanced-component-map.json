@@ -1,0 +1,232 @@
+{
+  "metadata": {
+    "version": "2.0.0",
+    "lastUpdated": "2025-07-25T23:55:00Z",
+    "description": "Enhanced component mapping with infinite nesting support"
+  },
+  "components": {
+    "module.terminal": {
+      "identifier": "module.terminal",
+      "displayName": "Terminal Module",
+      "level": "module",
+      "buildScope": "module",
+      "files": ["Modules/Terminal/"],
+      "buildTime": 180,
+      "hotSwappable": true,
+      "version": "1.2.0",
+      "description": "Full-featured native macOS terminal emulator",
+      "features": {
+        "claudeIntegration": {
+          "identifier": "module.terminal.claudeIntegration",
+          "displayName": "Claude Code Integration",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["Modules/Terminal/Sources/ClaudeIntegration/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "description": "Automated onboarding and session management for Claude Code"
+        },
+        "autoPermission": {
+          "identifier": "module.terminal.autoPermission",
+          "displayName": "Auto-Permission System",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["Modules/Terminal/Sources/AutoPermission/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "description": "Secure unattended execution with automatic permission handling"
+        }
+      }
+    },
+    "systemHealth": {
+      "identifier": "systemHealth",
+      "displayName": "System Health",
+      "level": "submodule",
+      "buildScope": "submodule",
+      "files": ["Modules/Dashboard/SubModules/SystemHealth/"],
+      "buildTime": 120,
+      "hotSwappable": true,
+      "version": "1.1.0",
+      "features": {
+        "cpu": {
+          "identifier": "systemHealth.cpu",
+          "displayName": "CPU Metrics",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["SystemHealth/Features/CPUMetrics/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "components": {
+            "display": {
+              "identifier": "systemHealth.cpu.display",
+              "displayName": "CPU Display",
+              "level": "component",
+              "buildScope": "component",
+              "files": ["CPUMetrics/Sources/Display/CPUDisplayView.swift"],
+              "buildTime": 45,
+              "hotSwappable": true,
+              "widgets": {
+                "animation": {
+                  "identifier": "systemHealth.cpu.display.animation",
+                  "displayName": "CPU Animation",
+                  "level": "widget",
+                  "buildScope": "widget",
+                  "files": ["CPUMetrics/Sources/Display/Widgets/Animation.swift"],
+                  "buildTime": 30,
+                  "hotSwappable": true,
+                  "properties": {
+                    "speed": {
+                      "identifier": "systemHealth.cpu.display.animation.speed",
+                      "level": "property",
+                      "buildScope": "property",
+                      "buildTime": 15
+                    },
+                    "color": {
+                      "identifier": "systemHealth.cpu.display.animation.color",
+                      "level": "property",
+                      "buildScope": "property",
+                      "buildTime": 15
+                    }
+                  }
+                },
+                "percentageBar": {
+                  "identifier": "systemHealth.cpu.display.percentageBar",
+                  "displayName": "Percentage Bar",
+                  "level": "widget",
+                  "buildScope": "widget",
+                  "files": ["CPUMetrics/Sources/Display/Widgets/PercentageBar.swift"],
+                  "buildTime": 30,
+                  "hotSwappable": true
+                },
+                "numberDisplay": {
+                  "identifier": "systemHealth.cpu.display.numberDisplay",
+                  "displayName": "Number Display",
+                  "level": "widget",
+                  "buildScope": "widget",
+                  "files": ["CPUMetrics/Sources/Display/Widgets/NumberDisplay.swift"],
+                  "buildTime": 25,
+                  "hotSwappable": true
+                }
+              }
+            },
+            "dataSource": {
+              "identifier": "systemHealth.cpu.dataSource",
+              "displayName": "CPU Data Source",
+              "level": "component",
+              "buildScope": "component",
+              "files": ["CPUMetrics/Sources/CPUDataSource.swift"],
+              "buildTime": 40,
+              "hotSwappable": true
+            }
+          }
+        },
+        "memory": {
+          "identifier": "systemHealth.memory",
+          "displayName": "Memory Metrics",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["SystemHealth/Features/MemoryMetrics/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "components": {
+            "display": {
+              "identifier": "systemHealth.memory.display",
+              "displayName": "Memory Display",
+              "level": "component",
+              "buildScope": "component",
+              "files": ["MemoryMetrics/Sources/MemoryMetricsView.swift"],
+              "buildTime": 45,
+              "hotSwappable": true,
+              "widgets": {
+                "bar": {
+                  "identifier": "systemHealth.memory.display.bar",
+                  "displayName": "Memory Bar",
+                  "level": "widget",
+                  "buildScope": "widget",
+                  "files": ["MemoryMetrics/Sources/Display/Widgets/MemoryBar.swift"],
+                  "buildTime": 30,
+                  "hotSwappable": true,
+                  "properties": {
+                    "color": {
+                      "identifier": "systemHealth.memory.display.bar.color",
+                      "displayName": "Bar Color",
+                      "level": "property",
+                      "buildScope": "property",
+                      "buildTime": 15,
+                      "currentValue": "purple",
+                      "possibleValues": ["red", "orange", "yellow", "green", "blue", "purple"]
+                    },
+                    "height": {
+                      "identifier": "systemHealth.memory.display.bar.height",
+                      "level": "property",
+                      "buildScope": "property",
+                      "buildTime": 15
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "gpu": {
+          "identifier": "systemHealth.gpu",
+          "displayName": "GPU Metrics",
+          "level": "feature",
+          "buildScope": "feature",
+          "status": "planned",
+          "buildTime": 120,
+          "hotSwappable": true,
+          "version": "0.0.0"
+        }
+      }
+    }
+  },
+  "buildLevels": {
+    "property": {
+      "description": "Single property change",
+      "averageBuildTime": 15,
+      "exampleTargets": ["color", "size", "speed", "text"],
+      "requiresRestart": false
+    },
+    "widget": {
+      "description": "UI widget modification",
+      "averageBuildTime": 30,
+      "exampleTargets": ["bar", "button", "animation", "display"],
+      "requiresRestart": false
+    },
+    "component": {
+      "description": "Functional component",
+      "averageBuildTime": 45,
+      "exampleTargets": ["display", "dataSource", "controller"],
+      "requiresRestart": false
+    },
+    "feature": {
+      "description": "Major feature set",
+      "averageBuildTime": 90,
+      "exampleTargets": ["cpuMetrics", "memoryMetrics", "gpuMetrics"],
+      "requiresRestart": false
+    },
+    "submodule": {
+      "description": "Module section",
+      "averageBuildTime": 120,
+      "exampleTargets": ["systemHealth", "userPreferences"],
+      "requiresRestart": false
+    },
+    "module": {
+      "description": "Complete module",
+      "averageBuildTime": 180,
+      "exampleTargets": ["dashboard", "projects", "terminal"],
+      "requiresRestart": false
+    },
+    "system": {
+      "description": "Core system",
+      "averageBuildTime": 300,
+      "exampleTargets": ["moduleManager", "bridgeProtocol"],
+      "requiresRestart": true
+    }
+  }
+}

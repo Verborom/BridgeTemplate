@@ -262,7 +262,7 @@ class MockTerminalModule: BridgeModule, ObservableObject {
     let id = "com.bridge.terminal"
     let displayName = "Terminal"
     let icon = "terminal.fill"
-    let version = ModuleVersion(major: 1, minor: 3, patch: 0) // Real Terminal module version
+    let version = ModuleVersion(major: 1, minor: 2, patch: 0)
     let dependencies: [String] = []
     let subModules: [String: any BridgeModule] = [:]
     

@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Terminal
 
 /// # ModuleManager
 ///
@@ -395,9 +396,7 @@ public class ModuleManager: ObservableObject {
         case "com.bridge.terminal":
             // For now, return MockTerminalModule but with real version number
             // In production, this would load the real Terminal module from the package
-            let mock = MockTerminalModule()
-            // Update the mock to show it represents the real module
-            return mock
+            return MockTerminalModule()
         default:
             throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
         }

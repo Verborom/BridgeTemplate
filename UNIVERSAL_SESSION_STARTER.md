@@ -125,6 +125,7 @@ Include commit instructions following GIT_SYNC_SYSTEM.md workflow.
 ### **Essential References:**
 - **Session Onboarding**: `docs/SESSION_ONBOARDING.md` (MUST READ FIRST)
 - **Git Workflow**: `docs/GIT_SYNC_SYSTEM.md` (CRITICAL for sync)
+- **Desktop Claude Role**: `docs/DESKTOP_CLAUDE_ONBOARDING.md` (YOUR SPECIFIC ROLE)
 - **Current Architecture**: `docs/knowledge-base/COMPLETE_REFERENCE.md`
 - **Granular Development**: `docs/GRANULAR_DEV_SUMMARY.md`
 
@@ -237,6 +238,7 @@ git log --oneline -5
 ### **Essential References:**
 - **Session Onboarding**: `docs/SESSION_ONBOARDING.md` (MUST READ FIRST)
 - **Git Workflow**: `docs/GIT_SYNC_SYSTEM.md` (CRITICAL for commits)
+- **Claude Code Role**: `docs/CLAUDE_CODE_ONBOARDING.md` (YOUR SPECIFIC ROLE)
 - **Granular Build Guide**: `docs/CLAUDE_CODE_GRANULAR_DEV.md`
 - **Architecture Patterns**: `docs/knowledge-base/COMPLETE_REFERENCE.md`
 

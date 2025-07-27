@@ -1,0 +1,256 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-07-25T23:30:00Z",
+    "description": "Component mapping database for granular development intelligence"
+  },
+  "ui": {
+    "addModuleButton": {
+      "identifier": "ui.sidebar.addModule",
+      "displayName": "Add Module Button",
+      "files": [
+        "Platforms/macOS/BridgeMac.swift",
+        "Platforms/macOS/UI/ModuleSelectorView.swift"
+      ],
+      "affectedModules": ["com.bridge.core.ui"],
+      "buildScope": "component",
+      "dependencies": ["moduleManager", "moduleRegistry"],
+      "testFiles": ["Tests/UI/ModuleSelectorTests.swift"],
+      "buildTime": 30,
+      "hotSwappable": true
+    },
+    "sidebarNavigation": {
+      "identifier": "ui.navigation.sidebar",
+      "displayName": "Sidebar Navigation",
+      "files": [
+        "Platforms/macOS/BridgeMac.swift",
+        "Platforms/macOS/UI/ModuleSidebar.swift"
+      ],
+      "affectedModules": ["com.bridge.core.navigation"],
+      "buildScope": "component",
+      "dependencies": ["navigationController"],
+      "testFiles": ["Tests/UI/SidebarNavigationTests.swift"],
+      "buildTime": 45,
+      "hotSwappable": true
+    },
+    "moduleRow": {
+      "identifier": "ui.sidebar.moduleRow",
+      "displayName": "Module Row Component",
+      "files": [
+        "Platforms/macOS/BridgeMac.swift"
+      ],
+      "affectedModules": ["com.bridge.core.ui"],
+      "buildScope": "component",
+      "dependencies": ["moduleManager"],
+      "testFiles": ["Tests/UI/ModuleRowTests.swift"],
+      "buildTime": 20,
+      "hotSwappable": true
+    },
+    "contentArea": {
+      "identifier": "ui.main.contentArea",
+      "displayName": "Module Content Area",
+      "files": [
+        "Platforms/macOS/BridgeMac.swift"
+      ],
+      "affectedModules": ["com.bridge.core.ui"],
+      "buildScope": "component",
+      "dependencies": ["moduleManager"],
+      "testFiles": ["Tests/UI/ContentAreaTests.swift"],
+      "buildTime": 25,
+      "hotSwappable": true
+    },
+    "systemStatusTile": {
+      "identifier": "ui.sidebar.systemStatus",
+      "displayName": "System Status Tile",
+      "files": [
+        "Platforms/macOS/UI/SidebarTiles/SystemStatusTile.swift",
+        "Platforms/macOS/BridgeMac.swift"
+      ],
+      "affectedModules": ["com.bridge.core.ui"],
+      "buildScope": "component",
+      "dependencies": [],
+      "testFiles": ["Tests/UI/SystemStatusTileTests.swift"],
+      "buildTime": 30,
+      "hotSwappable": true
+    }
+  },
+  "modules": {
+    "dashboard": {
+      "identifier": "module.dashboard",
+      "displayName": "Dashboard Module",
+      "files": [
+        "Modules/Dashboard/Sources/DashboardModule.swift",
+        "Core/MockModules.swift"
+      ],
+      "affectedModules": ["com.bridge.dashboard"],
+      "buildScope": "module",
+      "dependencies": [],
+      "testFiles": ["Tests/Modules/DashboardTests.swift"],
+      "buildTime": 120,
+      "hotSwappable": true,
+      "submodules": {
+        "statsWidget": {
+          "identifier": "dashboard.widgets.stats",
+          "displayName": "Stats Widget",
+          "files": [
+            "Modules/Dashboard/SubModules/StatsWidget/",
+            "Core/MockModules.swift"
+          ],
+          "affectedModules": ["com.bridge.dashboard.stats"],
+          "buildScope": "submodule",
+          "parentModule": "com.bridge.dashboard",
+          "dependencies": ["dashboard"],
+          "testFiles": ["Tests/Modules/Dashboard/StatsWidgetTests.swift"],
+          "buildTime": 60,
+          "hotSwappable": true
+        },
+        "activityFeed": {
+          "identifier": "dashboard.widgets.activity",
+          "displayName": "Activity Feed",
+          "files": [
+            "Modules/Dashboard/SubModules/ActivityFeed/",
+            "Core/MockModules.swift"
+          ],
+          "affectedModules": ["com.bridge.dashboard.activity"],
+          "buildScope": "submodule",
+          "parentModule": "com.bridge.dashboard",
+          "dependencies": ["dashboard"],
+          "testFiles": ["Tests/Modules/Dashboard/ActivityFeedTests.swift"],
+          "buildTime": 45,
+          "hotSwappable": true
+        },
+        "quickActions": {
+          "identifier": "dashboard.widgets.actions",
+          "displayName": "Quick Actions",
+          "files": [
+            "Modules/Dashboard/SubModules/QuickActions/",
+            "Core/MockModules.swift"
+          ],
+          "affectedModules": ["com.bridge.dashboard.actions"],
+          "buildScope": "submodule",
+          "parentModule": "com.bridge.dashboard",
+          "dependencies": ["dashboard"],
+          "testFiles": ["Tests/Modules/Dashboard/QuickActionsTests.swift"],
+          "buildTime": 40,
+          "hotSwappable": true
+        },
+        "systemHealth": {
+          "identifier": "dashboard.widgets.health",
+          "displayName": "System Health Monitor",
+          "files": [
+            "Modules/Dashboard/SubModules/SystemHealth/",
+            "Core/MockModules.swift"
+          ],
+          "affectedModules": ["com.bridge.dashboard.health"],
+          "buildScope": "submodule",
+          "parentModule": "com.bridge.dashboard",
+          "dependencies": ["dashboard"],
+          "testFiles": ["Tests/Modules/Dashboard/SystemHealthTests.swift"],
+          "buildTime": 50,
+          "hotSwappable": true
+        }
+      }
+    },
+    "projects": {
+      "identifier": "module.projects",
+      "displayName": "Projects Module",
+      "files": [
+        "Modules/Projects/Sources/ProjectsModule.swift",
+        "Core/MockModules.swift"
+      ],
+      "affectedModules": ["com.bridge.projects"],
+      "buildScope": "module",
+      "dependencies": ["com.bridge.dashboard"],
+      "testFiles": ["Tests/Modules/ProjectsTests.swift"],
+      "buildTime": 90,
+      "hotSwappable": true
+    },
+    "terminal": {
+      "identifier": "module.terminal",
+      "displayName": "Terminal Module",
+      "files": [
+        "Modules/Terminal/Sources/TerminalModule.swift",
+        "Core/MockModules.swift"
+      ],
+      "affectedModules": ["com.bridge.terminal"],
+      "buildScope": "module",
+      "dependencies": [],
+      "testFiles": ["Tests/Modules/TerminalTests.swift"],
+      "buildTime": 80,
+      "hotSwappable": true
+    }
+  },
+  "core": {
+    "moduleManager": {
+      "identifier": "core.moduleManager",
+      "displayName": "Module Manager",
+      "files": [
+        "Core/ModuleManager/ModuleManager.swift"
+      ],
+      "affectedModules": ["*"],
+      "buildScope": "system",
+      "dependencies": [],
+      "testFiles": ["Tests/Core/ModuleManagerTests.swift"],
+      "buildTime": 180,
+      "hotSwappable": false
+    },
+    "versionManager": {
+      "identifier": "core.versionManager",
+      "displayName": "Version Manager",
+      "files": [
+        "Core/VersionManager/VersionManager.swift"
+      ],
+      "affectedModules": ["*"],
+      "buildScope": "system",
+      "dependencies": [],
+      "testFiles": ["Tests/Core/VersionManagerTests.swift"],
+      "buildTime": 120,
+      "hotSwappable": false
+    },
+    "bridgeModule": {
+      "identifier": "core.bridgeModule",
+      "displayName": "Bridge Module Protocol",
+      "files": [
+        "Core/BridgeModule.swift"
+      ],
+      "affectedModules": ["*"],
+      "buildScope": "system",
+      "dependencies": [],
+      "testFiles": ["Tests/Core/BridgeModuleTests.swift"],
+      "buildTime": 150,
+      "hotSwappable": false
+    }
+  },
+  "buildScopes": {
+    "component": {
+      "description": "Single UI element or function",
+      "averageBuildTime": 30,
+      "requiresRestart": false,
+      "affectsTests": "local"
+    },
+    "submodule": {
+      "description": "Feature within a module",
+      "averageBuildTime": 60,
+      "requiresRestart": false,
+      "affectsTests": "module"
+    },
+    "module": {
+      "description": "Entire module",
+      "averageBuildTime": 120,
+      "requiresRestart": false,
+      "affectsTests": "integration"
+    },
+    "system": {
+      "description": "Core architecture",
+      "averageBuildTime": 180,
+      "requiresRestart": true,
+      "affectsTests": "all"
+    },
+    "full": {
+      "description": "Complete rebuild",
+      "averageBuildTime": 300,
+      "requiresRestart": true,
+      "affectsTests": "all"
+    }
+  }
+}
