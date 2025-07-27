@@ -1,0 +1,185 @@
+# TERMINAL MODULE INTEGRATION REQUEST
+
+## OBJECTIVE
+Replace MockTerminalModule with the fully functional Terminal module (v1.3.0) that exists in `Modules/Terminal/` and create a new build that loads the real Terminal implementation instead of the mock.
+
+## CRITICAL CONTEXT
+The real Terminal module exists at `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/Modules/Terminal/` with comprehensive functionality including:
+- Real shell processes with PTY emulation  
+- Claude Code integration with automated onboarding
+- Auto-permission system with keychain integration  
+- Multiple terminal sessions with tabs
+- Full ANSI color support and terminal buffer management
+- Native macOS terminal experience
+
+However, the current app loads MockTerminalModule from `Core/MockModules.swift` instead of the real implementation due to hardcoded module instantiation in ModuleManager.
+
+## TECHNICAL SPECIFICATIONS
+
+### 1. UPDATE MODULE MANAGER IMPORTS
+**File**: `Core/ModuleManager/ModuleManager.swift`
+
+Add Terminal module import at the top:
+```swift
+import SwiftUI
+import Combine
+// ADD THIS LINE:
+import Terminal
+```
+
+### 2. REPLACE HARDCODED MOCK INSTANTIATION  
+**File**: `Core/ModuleManager/ModuleManager.swift` 
+**Location**: `createModuleInstance()` method around line 200
+
+```swift
+// FIND THIS SECTION:
+switch metadata.identifier {
+case "com.bridge.dashboard":
+    return MockDashboardModule()
+case "com.bridge.projects":
+    return MockProjectsModule()
+case "com.bridge.terminal":
+    return MockTerminalModule()  // <-- REPLACE THIS LINE
+default:
+    throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
+}
+
+// CHANGE TO:
+switch metadata.identifier {
+case "com.bridge.dashboard":
+    return MockDashboardModule()
+case "com.bridge.projects":
+    return MockProjectsModule()
+case "com.bridge.terminal":
+    return TerminalModule()  // <-- REAL TERMINAL MODULE
+default:
+    throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
+}
+```
+
+### 3. UPDATE TERMINAL MODULE METADATA
+**File**: `Core/ModuleManager/ModuleManager.swift`
+**Location**: `discoverAvailableModules()` method
+
+```swift
+// FIND Terminal metadata:
+ModuleMetadata(
+    identifier: "com.bridge.terminal",
+    name: "Terminal",
+    versions: ["1.2.0"],  // <-- UPDATE THIS
+    dependencies: []
+)
+
+// CHANGE TO:
+ModuleMetadata(
+    identifier: "com.bridge.terminal", 
+    name: "Terminal",
+    versions: ["1.3.0"],  // <-- REAL VERSION
+    dependencies: []
+)
+```
+
+### 4. ADD TERMINAL PACKAGE DEPENDENCY
+**Action**: Create or update main app Package.swift to include Terminal dependency
+
+If no Package.swift exists in the main project, create one at project root:
+```swift
+// swift-tools-version: 5.9
+import PackageDescription
+
+let package = Package(
+    name: "BridgeTemplate",
+    platforms: [
+        .macOS(.v14)
+    ],
+    dependencies: [
+        .package(path: "./Modules/Terminal")
+    ],
+    targets: [
+        .executableTarget(
+            name: "BridgeMac",
+            dependencies: [
+                .product(name: "Terminal", package: "Terminal")
+            ],
+            path: "Platforms/macOS"
+        )
+    ]
+)
+```
+
+If Package.swift already exists, add Terminal to dependencies array.
+
+### 5. UPDATE MAIN APP IMPORTS
+**File**: `Platforms/macOS/BridgeMac.swift`
+
+Add Terminal import at the top:
+```swift
+import SwiftUI
+// ADD THIS LINE:
+import Terminal
+```
+
+### 6. BUILD INTEGRATION TEST
+**Action**: Build and test the integration
+
+```bash
+cd /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate
+
+# First build Terminal module
+echo "Building Terminal module..."
+cd Modules/Terminal
+swift build -c release
+
+# Return to project root and build main app
+cd ../../
+echo "Building main app with real Terminal..."
+
+# Use enhanced smart build to integrate
+./scripts/enhanced-smart-build.sh "integrate real Terminal module v1.3.0"
+
+# Test the integration
+echo "Testing Terminal integration..."
+open builds/macos/latest/BridgeMac.app
+```
+
+### 7. VERIFY INTEGRATION SUCCESS
+**Validation Steps:**
+1. **Module Loading**: App should show "Terminal v1.3.0" instead of "Terminal v1.2.0"
+2. **Real Functionality**: Terminal should have real shell processes, not mock display
+3. **Claude Integration**: Should see Claude Code integration button/features
+4. **Auto-Permissions**: Should see auto-permission system indicators
+5. **Multi-Session**: Should support multiple terminal tabs
+6. **Console Output**: Should log "✅ Loaded real Terminal module v1.3.0"
+
+### 8. UPDATE BUILD OUTPUTS
+**Action**: Ensure builds directory reflects real Terminal integration
+
+The build should create:
+- `builds/macos/v{VERSION}/BridgeMac.app` with real Terminal
+- Updated `version-manifest.json` showing Terminal v1.3.0
+- Build logs confirming real module loading
+
+## BUILD SCOPE
+- **Level**: Module-level integration (3+ minutes)
+- **Affected Files**: ModuleManager, main app build, Terminal package integration  
+- **Hot-swap Ready**: Yes - Terminal module can be replaced with real implementation
+- **Risk Level**: Medium - requires build system changes but preserves existing functionality
+
+## SUCCESS CRITERIA
+✅ ModuleManager loads TerminalModule() instead of MockTerminalModule()
+✅ App displays "Terminal v1.3.0" in UI and version information
+✅ Real terminal functionality works (shell processes, commands, etc.)
+✅ Claude Code integration is visible and functional
+✅ Auto-permission system is available and working
+✅ Multiple terminal sessions work with real tabs
+✅ Build creates working BridgeMac.app with real Terminal
+✅ No functionality regression in other modules (Dashboard, Projects)
+
+## EXECUTION NOTES
+- Preserve all existing functionality in Dashboard and Projects modules
+- Use granular build system for surgical precision
+- Test thoroughly before finalizing build
+- Document any build issues encountered
+- Ensure hot-swap capability remains intact
+
+Execute this integration using the enhanced smart build system to replace mock Terminal with the fully functional v1.3.0 implementation.

@@ -30,8 +30,9 @@ let package = Package(
                 "Core/BridgeModule.swift",
                 "Core/ModuleManager/ModuleManager.swift",
                 "Core/VersionManager/VersionManager.swift",
-                "Core/MockModules.swift",
-                "UI/SidebarTiles/SystemStatusTile.swift"
+                "MacOSModules.swift",
+                "UI/SidebarTiles/SystemStatusTile.swift",
+                "RealTerminalModule.swift"
             ],
             resources: [],
             swiftSettings: [

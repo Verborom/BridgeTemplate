@@ -93,6 +93,9 @@ public class AutoPermissionSystem: ObservableObject {
     /// Grant policy engine
     private let policyEngine = GrantPolicyEngine()
     
+    /// Public initializer
+    public init() {}
+    
     /// Initialize the auto-permission system
     ///
     /// Sets up:

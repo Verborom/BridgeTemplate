@@ -1,4 +1,5 @@
 import SwiftUI
+import Terminal
 
 // MARK: - Mock Dashboard Module
 
@@ -256,9 +257,13 @@ struct ProjectRow: View {
     }
 }
 
-// MARK: - Mock Terminal Module
+// MARK: - Terminal Module (Using Real Implementation)
 
-class MockTerminalModule: BridgeModule, ObservableObject {
+// For macOS, we use the real Terminal module
+typealias MockTerminalModule = RealTerminalModule
+
+// Backup mock if needed
+class MockTerminalModuleOld: BridgeModule, ObservableObject {
     let id = "com.bridge.terminal"
     let displayName = "Terminal"
     let icon = "terminal.fill"

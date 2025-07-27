@@ -73,6 +73,9 @@ public class ClaudeCodeIntegration: ObservableObject {
     /// Integration status
     @Published public var status: IntegrationStatus = .inactive
     
+    /// Public initializer
+    public init() {}
+    
     /// Initialize the Claude Code integration
     ///
     /// Sets up the integration layer and prepares for Claude sessions.

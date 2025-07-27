@@ -84,9 +84,8 @@ struct BridgeMacApp: App {
             _ = try await moduleManager.loadModule(identifier: "com.bridge.dashboard")
             _ = try await moduleManager.loadModule(identifier: "com.bridge.projects")
             
-            // Load real Terminal module (not mock)
-            let terminalModule = try await moduleManager.loadModule(identifier: "com.bridge.terminal")
-            print("✅ Loaded real Terminal module v\(terminalModule.version)")
+            // Load Terminal module
+            _ = try await moduleManager.loadModule(identifier: "com.bridge.terminal")
             
             // Set default selection to Dashboard
             appModel.selectedModuleId = "com.bridge.dashboard"

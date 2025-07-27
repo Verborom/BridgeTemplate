@@ -1,0 +1,26 @@
+{
+  "appVersion": "2.0.2",
+  "buildDate": "2025-07-27T09:53:30Z",
+  "architecture": "Modular Foundation",
+  "features": {
+    "realTerminalModule": true,
+    "claudeCodeIntegration": true,
+    "autoPermissionSystem": true,
+    "multiSessionSupport": true,
+    "hotSwappable": true
+  },
+  "modules": {
+    "com.bridge.dashboard": "1.5.2",
+    "com.bridge.projects": "1.8.1",
+    "com.bridge.terminal": "1.3.0"
+  },
+  "improvements": [
+    "✅ REAL Terminal module v1.3.0 with full functionality",
+    "✅ Native macOS terminal with PTY support",
+    "✅ Claude Code integration with automated onboarding",
+    "✅ Auto-permission system with keychain security",
+    "✅ Multi-session support with tabs",
+    "✅ Full ANSI color and escape sequence support",
+    "✅ Hot-swappable architecture maintained"
+  ]
+}

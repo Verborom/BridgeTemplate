@@ -132,7 +132,7 @@ public struct ModuleMessage: Codable {
 /// - **ANSIParser**: ANSI escape sequence parsing and rendering
 /// - **TerminalView**: SwiftUI presentation layer
 @MainActor
-public class TerminalModule: @preconcurrency BridgeModule {
+public class TerminalModule: BridgeModule {
     
     /// The unique identifier for this module
     ///
@@ -433,6 +433,13 @@ public struct TerminalView: View {
     /// Show auto-permission settings
     @State private var showAutoPermission = false
     
+    /// Public initializer
+    public init(viewModel: TerminalViewModel, claudeIntegration: ClaudeCodeIntegration, autoPermissionSystem: AutoPermissionSystem) {
+        self.viewModel = viewModel
+        self.claudeIntegration = claudeIntegration
+        self.autoPermissionSystem = autoPermissionSystem
+    }
+    
     public var body: some View {
         VStack(spacing: 0) {
             // Toolbar
@@ -588,7 +595,7 @@ public class TerminalViewModel: ObservableObject {
     @Published var sessions: [TerminalSession] = []
     
     /// Currently active session
-    @Published var activeSession: TerminalSession?
+    @Published public var activeSession: TerminalSession?
     
     /// Terminal configuration
     @Published var config = TerminalConfig.default
@@ -601,6 +608,9 @@ public class TerminalViewModel: ObservableObject {
     
     /// Shell environment variables
     private var environment: [String: String] = [:]
+    
+    /// Public initializer
+    public init() {}
     
     /// Create a new terminal session
     public func createNewSession() async {
@@ -949,37 +959,5 @@ struct TerminalSettingsView: View {
         }
         .padding()
         .frame(width: 300)
-    }
-}
-
-// MARK: - Mock Terminal Module
-
-/// Mock implementation for ModuleManager
-class MockTerminalModule: BridgeModule {
-    let id = "com.bridge.terminal"
-    let displayName = "Terminal"
-    let icon = "terminal"
-    let version = ModuleVersion(major: 1, minor: 2, patch: 0)
-    let dependencies: [String] = []
-    let subModules: [String: any BridgeModule] = [:]
-    
-    var view: AnyView {
-        AnyView(Text("Terminal Module").padding())
-    }
-    
-    func initialize() async throws {
-        print("Mock Terminal initialized")
-    }
-    
-    func cleanup() async {
-        print("Mock Terminal cleaned up")
-    }
-    
-    func canUnload() -> Bool {
-        return true
-    }
-    
-    func receiveMessage(_ message: ModuleMessage) async throws {
-        print("Mock Terminal received message: \(message.type)")
     }
 }
