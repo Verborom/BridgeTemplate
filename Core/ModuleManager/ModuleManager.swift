@@ -1,5 +1,6 @@
 import SwiftUI
 import Combine
+import Terminal
 
 /// # ModuleManager
 ///
@@ -393,7 +394,8 @@ public class ModuleManager: ObservableObject {
         case "com.bridge.projects":
             return MockProjectsModule()
         case "com.bridge.terminal":
-            return MockTerminalModule()
+            // Use real Terminal module instead of mock
+            return TerminalModule()
         default:
             throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
         }
