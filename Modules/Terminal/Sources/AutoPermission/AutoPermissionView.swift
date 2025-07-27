@@ -46,6 +46,14 @@ public struct AutoPermissionView: View {
     @State private var testCommand = ""
     @State private var testResult: PermissionExecutionResult?
     
+    /// Computed properties
+    private var sessionGrantsCount: Int {
+        autoPermission.activeGrants.filter { grant in
+            if case .session = grant.scope { return true }
+            return false
+        }.count
+    }
+    
     public var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -156,10 +164,7 @@ public struct AutoPermissionView: View {
                     
                     StatCard(
                         title: "Session Grants",
-                        value: "\(autoPermission.activeGrants.filter { grant in
-                            if case .session = grant.scope { return true }
-                            return false
-                        }.count)",
+                        value: "\(sessionGrantsCount)",
                         icon: "clock.fill",
                         color: .orange
                     )
