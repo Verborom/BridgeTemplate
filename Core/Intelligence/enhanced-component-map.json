@@ -14,7 +14,20 @@
       "buildTime": 180,
       "hotSwappable": true,
       "version": "1.2.0",
-      "description": "Full-featured native macOS terminal emulator"
+      "description": "Full-featured native macOS terminal emulator",
+      "features": {
+        "claudeIntegration": {
+          "identifier": "module.terminal.claudeIntegration",
+          "displayName": "Claude Code Integration",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["Modules/Terminal/Sources/ClaudeIntegration/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "description": "Automated onboarding and session management for Claude Code"
+        }
+      }
     },
     "systemHealth": {
       "identifier": "systemHealth",

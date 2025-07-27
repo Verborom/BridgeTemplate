@@ -161,6 +161,9 @@ public class TerminalModule: BridgeModule {
     /// Active terminal sessions
     private var sessions: [String: TerminalSession] = [:]
     
+    /// Claude Code integration
+    @Published private var claudeIntegration = ClaudeCodeIntegration()
+    
     /// Sub-modules (Terminal has none currently)
     public let subModules: [String: any BridgeModule] = [:]
     
@@ -173,7 +176,7 @@ public class TerminalModule: BridgeModule {
     /// customizable themes, and full terminal emulation.
     public var view: AnyView {
         AnyView(
-            TerminalView(viewModel: viewModel)
+            TerminalView(viewModel: viewModel, claudeIntegration: claudeIntegration)
                 .environmentObject(viewModel)
         )
     }
@@ -204,6 +207,9 @@ public class TerminalModule: BridgeModule {
         // Create initial terminal session
         let defaultSession = createSession(name: "Default")
         await viewModel.setActiveSession(defaultSession)
+        
+        // Initialize Claude integration
+        try await claudeIntegration.initialize()
         
         print("✅ Terminal module initialized successfully")
     }
@@ -391,11 +397,17 @@ public struct TerminalView: View {
     /// View model containing terminal state
     @ObservedObject var viewModel: TerminalViewModel
     
+    /// Claude integration
+    let claudeIntegration: ClaudeCodeIntegration
+    
     /// Currently selected session tab
     @State private var selectedSessionId: String?
     
     /// Show settings popover
     @State private var showSettings = false
+    
+    /// Show Claude integration
+    @State private var showClaudeIntegration = false
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -419,6 +431,10 @@ public struct TerminalView: View {
         .onAppear {
             selectedSessionId = viewModel.activeSession?.id
         }
+        .sheet(isPresented: $showClaudeIntegration) {
+            ClaudeIntegrationView(integration: claudeIntegration)
+                .frame(minWidth: 800, minHeight: 600)
+        }
     }
     
     /// Terminal toolbar with actions
@@ -441,6 +457,18 @@ public struct TerminalView: View {
             .help("Split View")
             
             Spacer()
+            
+            // Claude integration
+            Button(action: { showClaudeIntegration.toggle() }) {
+                Image(systemName: "brain")
+                    .foregroundStyle(
+                        claudeIntegration.status == .ready ?
+                        LinearGradient(colors: [.purple, .blue], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                        LinearGradient(colors: [Color.white.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("Claude Code Integration")
             
             // Command palette
             Button(action: { viewModel.showCommandPalette.toggle() }) {
