@@ -595,6 +595,7 @@ public enum HierarchyError: LocalizedError {
 // MARK: - Hierarchy Rules
 
 /// Protocol for hierarchy validation rules
+@MainActor
 protocol HierarchyRule {
     func validate(_ component: any UniversalComponent, in manager: HierarchyManager) -> ValidationError?
 }
@@ -667,6 +668,7 @@ struct MaxDependenciesRule: HierarchyRule {
 // MARK: - Dependency Graph
 
 /// Internal dependency graph for cycle detection
+@MainActor
 private class DependencyGraph {
     private var adjacencyList: [UUID: Set<UUID>] = [:]
     private var dependencyList: [UUID: Set<UUID>] = [:]

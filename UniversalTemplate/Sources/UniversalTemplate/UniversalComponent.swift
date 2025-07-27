@@ -101,7 +101,7 @@ public protocol UniversalComponent: AnyObject, ObservableObject, Identifiable {
     var children: [any UniversalComponent] { get set }
     
     /// Component dependencies by ID
-    var dependencies: [UUID] { get }
+    var dependencies: [UUID] { get set }
     
     /// Capabilities this component provides
     var capabilities: [ComponentCapability] { get }
@@ -226,7 +226,7 @@ public enum HierarchyLevel: String, CaseIterable, Codable {
 }
 
 /// Component version with semantic versioning
-public struct ComponentVersion: Codable, Comparable, CustomStringConvertible {
+public struct ComponentVersion: Codable, Comparable, CustomStringConvertible, Hashable, Sendable {
     public let major: Int
     public let minor: Int
     public let patch: Int
@@ -394,12 +394,12 @@ public struct ValidationResult: Codable {
     public let errors: [ValidationError]
     public let warnings: [ValidationWarning]
     
-    public struct ValidationError: Codable {
+    public struct ValidationError: Codable, Sendable {
         public let code: String
         public let message: String
         public let severity: Severity
         
-        public enum Severity: String, Codable {
+        public enum Severity: String, Codable, Sendable {
             case critical = "Critical"
             case high = "High"
             case medium = "Medium"

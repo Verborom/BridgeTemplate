@@ -26,7 +26,7 @@ public class DashboardModule: BaseComponent {
     
     // MARK: - Initialization
     
-    public override init() {
+    public required init() {
         super.init()
         
         // Configure component identity
@@ -350,11 +350,12 @@ public class DashboardModule: BaseComponent {
 // MARK: - Supporting Types
 
 /// Dashboard data model
-private struct DashboardData {
-    var lastRefresh = Date()
-    var activeUsers = 0
-    var systemLoad = 0.0
-    var errorCount = 0
+@MainActor
+private class DashboardData: ObservableObject {
+    @Published var lastRefresh = Date()
+    @Published var activeUsers = 0
+    @Published var systemLoad = 0.0
+    @Published var errorCount = 0
 }
 
 /// Dashboard view
@@ -435,7 +436,7 @@ private struct DashboardHeader: View {
 /// Stats widget example
 @MainActor
 class StatsWidget: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Statistics"
         self.hierarchyLevel = .widget
@@ -461,7 +462,7 @@ class StatsWidget: BaseComponent {
 /// Activity widget example
 @MainActor
 class ActivityWidget: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Recent Activity"
         self.hierarchyLevel = .widget
@@ -487,7 +488,7 @@ class ActivityWidget: BaseComponent {
 /// Quick actions widget example
 @MainActor
 class QuickActionsWidget: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Quick Actions"
         self.hierarchyLevel = .widget

@@ -39,7 +39,7 @@ public final class ComponentFactory {
     public static let shared = ComponentFactory()
     
     /// Registry of component types
-    private var registry: [HierarchyLevel: any UniversalComponent.Type] = [:]
+    private var registry: [HierarchyLevel: () -> any UniversalComponent] = [:]
     
     /// Template cache
     private var templateCache: [String: ComponentTemplate] = [:]
@@ -59,8 +59,8 @@ public final class ComponentFactory {
     /// - Parameters:
     ///   - componentType: The component class to register
     ///   - level: The hierarchy level this component represents
-    public func register<T: UniversalComponent>(_ componentType: T.Type, for level: HierarchyLevel) {
-        registry[level] = componentType
+    public func register<T: UniversalComponent>(_ componentType: T.Type, for level: HierarchyLevel) where T: BaseComponent {
+        registry[level] = { T() }
     }
     
     /// Register a custom builder for complex component creation
@@ -84,7 +84,7 @@ public final class ComponentFactory {
         try validateConfiguration(config)
         
         // Get appropriate component type
-        guard let componentType = registry[config.hierarchyLevel] else {
+        guard let componentCreator = registry[config.hierarchyLevel] else {
             // Fallback to base component
             return try await createBaseComponent(from: config)
         }
@@ -96,7 +96,7 @@ public final class ComponentFactory {
         }
         
         // Create component instance
-        let component = componentType.init()
+        let component = componentCreator()
         
         // Configure component
         try await configureComponent(component, with: config)
@@ -213,7 +213,7 @@ public final class ComponentFactory {
         let analysis = try await analyzeRequirements(requirements, context: context)
         
         // Determine best component type
-        let optimalType = analysis.recommendedLevel
+        let _ = analysis.recommendedLevel
         let config = analysis.suggestedConfiguration
         
         // Create component
@@ -227,7 +227,7 @@ public final class ComponentFactory {
         // Register base implementations for each level
         // In production, these would be actual implementations
         for level in HierarchyLevel.allCases {
-            registry[level] = BaseComponent.self
+            registry[level] = { BaseComponent() }
         }
     }
     
@@ -328,7 +328,7 @@ public final class ComponentFactory {
                 components[i-1].children.append(components[i])
             }
             
-        case .hierarchical(let structure):
+        case .hierarchical(_):
             // Link based on hierarchical structure
             // Implementation depends on structure definition
             break

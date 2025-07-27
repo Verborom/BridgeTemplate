@@ -108,7 +108,7 @@ open class BaseComponent: UniversalComponent, ObservableObject {
     // MARK: - Initialization
     
     /// Initialize the base component
-    public init() {
+    public required init() {
         setupObservation()
     }
     
@@ -542,6 +542,7 @@ public enum ComponentError: LocalizedError {
     case validationFailed([ValidationResult.ValidationError])
     case dependencyMissing(UUID)
     case circularDependency([UUID])
+    case creationFailed(String)
     
     public var errorDescription: String? {
         switch self {
@@ -559,6 +560,8 @@ public enum ComponentError: LocalizedError {
             return "Missing dependency: \(id)"
         case .circularDependency(let chain):
             return "Circular dependency detected: \(chain.map { $0.uuidString }.joined(separator: " -> "))"
+        case .creationFailed(let reason):
+            return "Component creation failed: \(reason)"
         }
     }
 }
