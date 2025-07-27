@@ -381,11 +381,11 @@ public class ModuleManager: ObservableObject {
         // For demo purposes, we'll create mock instances
         switch metadata.identifier {
         case "com.bridge.dashboard":
-            return MockDashboardModule()
+            return DashboardModule()
         case "com.bridge.projects":
             return MockProjectsModule()
         case "com.bridge.terminal":
-            return MockTerminalModule()
+            return TerminalModule()
         default:
             throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
         }

@@ -5,6 +5,17 @@
     "description": "Enhanced component mapping with infinite nesting support"
   },
   "components": {
+    "module.terminal": {
+      "identifier": "module.terminal",
+      "displayName": "Terminal Module",
+      "level": "module",
+      "buildScope": "module",
+      "files": ["Modules/Terminal/"],
+      "buildTime": 180,
+      "hotSwappable": true,
+      "version": "1.2.0",
+      "description": "Full-featured native macOS terminal emulator"
+    },
     "systemHealth": {
       "identifier": "systemHealth",
       "displayName": "System Health",

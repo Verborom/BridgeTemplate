@@ -1,0 +1,35 @@
+{
+  "version": "1.2.0",
+  "buildDate": "2025-07-26T23:45:00Z",
+  "changelog": {
+    "1.2.0": {
+      "date": "2025-07-26",
+      "changes": [
+        "Initial implementation with full PTY support",
+        "Native macOS terminal emulation",
+        "ANSI color and escape sequence handling",
+        "Multiple concurrent terminal sessions",
+        "Customizable themes and fonts",
+        "Integration with Bridge module commands",
+        "Hot-swappable for live updates"
+      ]
+    },
+    "1.1.0": {
+      "date": "2025-07-25",
+      "changes": [
+        "Added multi-session support",
+        "Improved performance"
+      ]
+    },
+    "1.0.0": {
+      "date": "2025-07-24",
+      "changes": [
+        "Basic terminal functionality"
+      ]
+    }
+  },
+  "compatibility": {
+    "minBridgeVersion": "2.0.0",
+    "maxBridgeVersion": null
+  }
+}
