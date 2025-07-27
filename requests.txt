@@ -1,147 +1,532 @@
-# TERMINAL MODULE INTEGRATION FIX - Real Terminal Module Connection
+# CHUNK 2: CREATE UNIVERSAL TEMPLATE
 
-## OBJECTIVE
-Fix the integration gap where the real Terminal module (v1.3.0) exists and is fully built but the app still loads MockTerminalModule instead of the real TerminalModule with Claude Code integration and auto-permissions.
+## CLAUDE CODE PROMPT
+Your ROLE is Claude Code. You are working on the Bridge Template project at /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/ on the "architectural-rebuild" branch.
 
-## CRITICAL CONTEXT
-Analysis reveals that Chunks 1-3 successfully created a complete Terminal module at `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/Modules/Terminal/` with:
-- ✅ Real shell processes and PTY support
-- ✅ Claude Code integration with automated onboarding  
-- ✅ Auto-permission system for unattended execution
-- ✅ Multi-session support with tabs
-- ✅ Full ANSI color and escape sequence support
-- ✅ Complete Swift package with successful build artifacts
+OBJECTIVE: Create the revolutionary UniversalTemplate that will be used for ALL hierarchy levels (Module, Submodule, Epic, Story, Feature, Task, etc.). This template contains complete CICD automation, Swift package structure, versioning, testing, and documentation - identical for every component at every level.
 
-However, the main app still uses MockTerminalModule due to hardcoded module creation in ModuleManager.
+This template will enable runtime instantiation anywhere in the hierarchy when users click "New Epic", "New Feature", etc. in the app.
 
-## TECHNICAL SPECIFICATION
+Use the granular build system and follow professional git workflow with comprehensive Swift DocC documentation.
 
-### 1. UPDATE MODULEMANAGER IMPORTS
-**File**: `Core/ModuleManager/ModuleManager.swift`
+## DETAILED REQUEST
 
-Add Terminal package import at the top:
-```swift
-import SwiftUI
-import Combine
-import Terminal  // Add this import for real Terminal module
+### OBJECTIVE
+Create a complete, production-ready UniversalTemplate that serves as the foundation for all components at every hierarchy level in the new dynamic architecture.
+
+### CRITICAL CONTEXT
+This template will be copied/instantiated for Modules, Submodules, Epics, Stories, Features, Tasks, etc. Must have complete CICD automation identical to main BridgeTemplate repo Must be universally applicable across ALL hierarchy levels Must support runtime instantiation and customization Real Terminal module (v1.3.0) exists and should be used as reference All future components use this single template for consistency
+
+### TECHNICAL SPECIFICATION
+
+### 1. CREATE UNIVERSAL TEMPLATE DIRECTORY
+**Location**: `Templates/UniversalTemplate/`
+
+Create complete template structure:
+```
+Templates/UniversalTemplate/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml              # Complete CICD pipeline
+│       ├── documentation.yml      # Auto-documentation
+│       ├── testing.yml           # Automated testing
+│       └── release.yml           # Release automation
+├── Sources/
+│   ├── UniversalComponent.swift   # Main component class
+│   ├── ComponentTypes.swift       # Type definitions
+│   └── ComponentManager.swift     # Lifecycle management
+├── Tests/
+│   ├── UniversalComponentTests.swift
+│   └── ComponentManagerTests.swift
+├── Documentation/
+│   └── UniversalTemplate.md       # Usage guide
+├── Package.swift                  # Swift package manifest
+├── version.json                   # Version management
+├── README.md                      # Auto-generated description
+└── .gitignore                     # Standard ignores
 ```
 
-### 2. UPDATE CREATEMODULEINSTANCE METHOD
-**File**: `Core/ModuleManager/ModuleManager.swift` (around line 390)
+### 2. UNIVERSAL COMPONENT IMPLEMENTATION
+**File**: `Templates/UniversalTemplate/Sources/UniversalComponent.swift`
 
-Replace the mock Terminal creation with real module:
 ```swift
-/// Create module instance from metadata
-private func createModuleInstance(from metadata: ModuleMetadata) async throws -> any BridgeModule {
-    // Real module implementations with Terminal integration complete
-    switch metadata.identifier {
-    case "com.bridge.dashboard":
-        return MockDashboardModule()
-    case "com.bridge.projects":
-        return MockProjectsModule()
-    case "com.bridge.terminal":
-        // ✅ REAL Terminal module with Claude Code integration and auto-permissions
-        return TerminalModule()
-    default:
-        throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
+/// # UniversalComponent
+/// 
+/// The foundational component class that can represent any hierarchy level
+/// in the Bridge Template system. This component supports hot-swapping,
+/// independent versioning, and infinite nesting capabilities.
+/// 
+/// ## Overview
+/// 
+/// UniversalComponent serves as the base for all components across every
+/// hierarchy level: Module, Submodule, Epic, Story, Feature, Task, etc.
+/// Each component maintains its own version, lifecycle, and can contain
+/// child components for infinite nesting.
+/// 
+/// ## Topics
+/// 
+/// ### Component Identity
+/// - ``identifier``
+/// - ``displayName`` 
+/// - ``componentType``
+/// - ``version``
+/// 
+/// ### Hierarchy Management
+/// - ``children``
+/// - ``parent``
+/// - ``addChild(_:)``
+/// - ``removeChild(_:)``
+/// 
+/// ### Lifecycle
+/// - ``initialize()``
+/// - ``cleanup()``
+/// - ``canUnload()``
+/// 
+/// ## Usage
+/// ```swift
+/// let epic = UniversalComponent(
+///     identifier: "com.bridge.projects.epic-1",
+///     type: .epic,
+///     displayName: "User Dashboard Redesign"
+/// )
+/// ```
+import SwiftUI
+
+public class UniversalComponent: ObservableObject, Identifiable {
+    /// Unique identifier for this component
+    public let identifier: String
+    
+    /// Version of this component
+    public let version: String
+    
+    /// Type of component (Module, Epic, Story, etc.)
+    public let type: ComponentType
+    
+    /// Human-readable display name
+    public let displayName: String
+    
+    /// Detailed description
+    public let description: String
+    
+    /// Child components for infinite nesting
+    @Published public private(set) var children: [UniversalComponent] = []
+    
+    /// Parent component reference
+    public weak var parent: UniversalComponent?
+    
+    /// Initialize a new universal component
+    public init(
+        identifier: String,
+        version: String = "1.0.0",
+        type: ComponentType,
+        displayName: String,
+        description: String = ""
+    ) {
+        self.identifier = identifier
+        self.version = version
+        self.type = type
+        self.displayName = displayName
+        self.description = description
+    }
+    
+    /// Initialize component resources
+    public func initialize() async throws {
+        // Load any required resources
+        // Set up child component discovery
+        await discoverChildren()
+    }
+    
+    /// Clean up resources before unloading
+    public func cleanup() async throws {
+        // Clean up children first
+        for child in children {
+            try await child.cleanup()
+        }
+        children.removeAll()
+    }
+    
+    /// Check if component can be safely unloaded
+    public func canUnload() -> Bool {
+        // Check if any children prevent unloading
+        return children.allSatisfy { $0.canUnload() }
+    }
+    
+    /// Add a child component
+    public func addChild(_ child: UniversalComponent) {
+        child.parent = self
+        children.append(child)
+    }
+    
+    /// Remove a child component
+    public func removeChild(_ child: UniversalComponent) {
+        child.parent = nil
+        children.removeAll { $0.identifier == child.identifier }
+    }
+    
+    /// Discover and load child components
+    private func discoverChildren() async {
+        // Implementation for discovering child components
+        // This will be customized based on component type
     }
 }
 ```
 
-### 3. UPDATE BRIDGEMAC IMPORTS
-**File**: `Platforms/macOS/BridgeMac.swift`
+### 3. COMPONENT TYPE DEFINITIONS
+**File**: `Templates/UniversalTemplate/Sources/ComponentTypes.swift`
 
-Replace commented import with real import:
 ```swift
-import SwiftUI
-import Terminal  // Real Terminal module import
+/// # ComponentType
+/// 
+/// Enumeration of all possible component types in the Bridge Template
+/// hierarchy system. Each type represents a different level of granularity
+/// from Module (largest) down to Property (smallest).
+/// 
+/// ## Overview
+/// 
+/// The hierarchy follows standard software project management practices:
+/// - Module: Top-level functionality (Terminal, Projects, Dashboard)
+/// - Submodule: Major sections within modules
+/// - Epic: Large initiatives spanning multiple stories
+/// - Story: User-facing functionality 
+/// - Feature: Specific functionality to implement
+/// - Task: Development work items
+/// - Widget: UI components
+/// - Property: Individual values or settings
+/// 
+/// ## Topics
+/// 
+/// ### Hierarchy Levels
+/// - ``module``
+/// - ``submodule``
+/// - ``epic``
+/// - ``story``
+/// - ``feature``
+/// - ``task``
+/// - ``widget``
+/// - ``property``
+public enum ComponentType: String, CaseIterable, Codable {
+    case module = "module"
+    case submodule = "submodule" 
+    case epic = "epic"
+    case story = "story"
+    case feature = "feature"
+    case task = "task"
+    case widget = "widget"
+    case property = "property"
+    
+    /// Display name for UI
+    public var displayName: String {
+        switch self {
+        case .module: return "Module"
+        case .submodule: return "Submodule"
+        case .epic: return "Epic"
+        case .story: return "Story"
+        case .feature: return "Feature"
+        case .task: return "Task"
+        case .widget: return "Widget"
+        case .property: return "Property"
+        }
+    }
+    
+    /// Typical build time for this component type
+    public var buildTime: TimeInterval {
+        switch self {
+        case .property: return 15  // 15 seconds
+        case .widget: return 30    // 30 seconds
+        case .task: return 45      // 45 seconds
+        case .feature: return 90   // 90 seconds
+        case .story: return 120    // 2 minutes
+        case .epic: return 150     // 2.5 minutes
+        case .submodule: return 180 // 3 minutes
+        case .module: return 240   // 4 minutes
+        }
+    }
+    
+    /// Child component types that can be contained
+    public var allowedChildTypes: [ComponentType] {
+        switch self {
+        case .module: return [.submodule]
+        case .submodule: return [.epic]
+        case .epic: return [.story]
+        case .story: return [.feature]
+        case .feature: return [.task]
+        case .task: return [.widget]
+        case .widget: return [.property]
+        case .property: return [] // Leaf node
+        }
+    }
+}
 ```
 
-Remove these commented lines:
-```swift
-// NOTE: Terminal module would be imported here in production build
-// import Terminal
+### 4. COMPLETE CICD WORKFLOW
+**File**: `Templates/UniversalTemplate/.github/workflows/ci-cd.yml`
+
+```yaml
+name: Universal Component CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  COMPONENT_NAME: ${{ github.event.repository.name }}
+
+jobs:
+  test:
+    name: Test Component
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: "5.9"
+    
+    - name: Cache Swift packages
+      uses: actions/cache@v3
+      with:
+        path: .build
+        key: ${{ runner.os }}-swift-${{ hashFiles('Package.swift') }}
+    
+    - name: Build component
+      run: swift build -c release
+    
+    - name: Run tests
+      run: swift test --enable-code-coverage
+    
+    - name: Generate coverage report
+      run: |
+        xcrun llvm-cov export .build/debug/*.xctest/Contents/MacOS/* \
+          -instr-profile .build/debug/codecov/default.profdata \
+          -format="lcov" > coverage.lcov
+
+  documentation:
+    name: Generate Documentation
+    runs-on: macos-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: "5.9"
+    
+    - name: Generate DocC documentation
+      run: |
+        swift package generate-documentation \
+          --target UniversalComponent \
+          --output-path ./docs
+    
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      if: github.ref == 'refs/heads/main'
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+
+  release:
+    name: Create Release
+    runs-on: macos-latest
+    needs: [test, documentation]
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Read version
+      id: version
+      run: |
+        VERSION=$(cat version.json | jq -r '.version')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+    
+    - name: Create release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.version }}
+        release_name: Release v${{ steps.version.outputs.version }}
+        draft: false
+        prerelease: false
 ```
 
-### 4. VERIFY PACKAGE DEPENDENCIES
-**File**: `Platforms/macOS/Package.swift`
+### 5. PACKAGE MANIFEST
+**File**: `Templates/UniversalTemplate/Package.swift`
 
-Ensure Terminal dependency exists (should already be present):
 ```swift
-dependencies: [
-    .package(path: "../../Modules/Terminal"),  // Verify this exists
-    .package(path: "../../Modules/Dashboard")
-],
-targets: [
-    .executableTarget(
-        name: "BridgeMac",
-        dependencies: [
-            .product(name: "Terminal", package: "Terminal"),  // Verify this exists
-            .product(name: "Dashboard", package: "Dashboard")
-        ],
-        // ... rest of target config
-    )
-]
-```
+// swift-tools-version: 5.9
+import PackageDescription
 
-### 5. UPDATE MODULE METADATA VERSION
-**File**: `Core/ModuleManager/ModuleManager.swift` (discoverAvailableModules method)
-
-Update Terminal module metadata to reflect real version:
-```swift
-ModuleMetadata(
-    identifier: "com.bridge.terminal",
-    name: "Terminal",
-    versions: ["1.3.0"], // Real version with all features
-    dependencies: [],
-    capabilities: [
-        "Native macOS Terminal with PTY support",
-        "Claude Code integration with automated onboarding",
-        "Auto-permission system with keychain security",
-        "Multi-session support with tabs and management",
-        "Full ANSI color and escape sequence support",
-        "Unattended execution for CI/CD workflows",
-        "Hot-swappable for runtime updates"
+let package = Package(
+    name: "UniversalComponent",
+    platforms: [
+        .macOS(.v14),
+        .iOS(.v17)
+    ],
+    products: [
+        .library(
+            name: "UniversalComponent",
+            targets: ["UniversalComponent"]),
+    ],
+    dependencies: [
+        // Add dependencies as needed
+    ],
+    targets: [
+        .target(
+            name: "UniversalComponent",
+            dependencies: [],
+            path: "Sources"
+        ),
+        .testTarget(
+            name: "UniversalComponentTests",
+            dependencies: ["UniversalComponent"],
+            path: "Tests"
+        ),
     ]
 )
 ```
 
-## BUILD SCOPE
-- **Target Level**: System-level integration (5+ minutes)
-- **Affected Components**: ModuleManager, BridgeMac imports, Terminal package integration
-- **Hot-swap Capability**: Yes - MockTerminalModule will be replaced with real TerminalModule
-- **Integration Complexity**: Medium - requires import changes and module instantiation updates
+### 6. VERSION MANAGEMENT
+**File**: `Templates/UniversalTemplate/version.json`
 
-## DOCUMENTATION REQUIREMENTS
-- Update build logs to show real Terminal v1.3.0 loading
-- Document Terminal module capabilities in module metadata
-- Include integration success confirmation in build output
+```json
+{
+  "version": "1.0.0",
+  "buildDate": "2025-07-27T00:00:00Z",
+  "componentType": "template",
+  "changelog": {
+    "1.0.0": {
+      "date": "2025-07-27",
+      "changes": [
+        "Initial UniversalTemplate implementation",
+        "Support for all hierarchy levels",
+        "Complete CICD automation",
+        "Swift DocC documentation integration",
+        "Automated testing and release workflows"
+      ]
+    }
+  },
+  "compatibility": {
+    "minBridgeVersion": "2.0.0",
+    "maxBridgeVersion": null
+  }
+}
+```
 
-## TESTING REQUIREMENTS
-1. **Module Loading**: Verify TerminalModule() loads instead of MockTerminalModule()
-2. **Shell Integration**: Confirm real shell processes start and execute commands
-3. **Claude Code Features**: Verify automated onboarding and session management work
-4. **Auto-Permission System**: Test keychain integration and unattended execution
-5. **UI Integration**: Verify Terminal views and controls display correctly
-6. **Multi-Session Support**: Test terminal tabs and session switching
-7. **Version Display**: Confirm Terminal shows v1.3.0 in sidebar
+### 7. COMPREHENSIVE TEST SUITE
+**File**: `Templates/UniversalTemplate/Tests/UniversalComponentTests.swift`
 
-## SUCCESS CRITERIA
-- ✅ Real TerminalModule loads instead of MockTerminalModule
-- ✅ Terminal sidebar shows v1.3.0 with advanced capability indicators
-- ✅ Claude Code integration button appears and functions
-- ✅ Auto-permission system button appears and functions  
-- ✅ Real shell commands execute in terminal sessions
-- ✅ Multi-session tabs work with session management
-- ✅ Build completes successfully with Terminal package integration
-- ✅ Hot-swap capability maintains all Terminal functionality
+```swift
+import XCTest
+@testable import UniversalComponent
 
-## POST-COMPLETION
-After successful integration:
-- Terminal module will provide real shell processes with PTY support
-- Claude Code integration will enable automated onboarding workflows
-- Auto-permission system will handle sudo and developer tool permissions
-- Multi-session support will provide professional terminal experience
-- Bridge Template will have complete Terminal functionality replacing mock
+/// # Universal Component Tests
+/// 
+/// Comprehensive test suite for universal component functionality.
+/// Tests all aspects of component lifecycle and behavior.
+/// 
+/// ## Test Coverage
+/// - Component initialization
+/// - Child loading and management
+/// - Version management
+/// - Cleanup procedures
+/// - Protocol compliance
+final class UniversalComponentTests: XCTestCase {
+    
+    /// Test basic component creation and properties
+    func testComponentCreation() async throws {
+        let component = UniversalComponent(
+            identifier: "com.bridge.test.component",
+            version: "1.0.0",
+            type: .feature,
+            displayName: "Test Component",
+            description: "Test component for unit testing"
+        )
+        
+        XCTAssertEqual(component.identifier, "com.bridge.test.component")
+        XCTAssertEqual(component.version, "1.0.0")
+        XCTAssertEqual(component.type, .feature)
+        XCTAssertEqual(component.displayName, "Test Component")
+        XCTAssertEqual(component.description, "Test component for unit testing")
+    }
+    
+    /// Test component initialization
+    func testComponentInitialization() async throws {
+        let component = UniversalComponent(
+            identifier: "com.bridge.test.init",
+            type: .story,
+            displayName: "Initialization Test"
+        )
+        
+        try await component.initialize()
+        
+        let children = await component.children
+        XCTAssertNotNil(children)
+    }
+    
+    /// Test component cleanup
+    func testComponentCleanup() async throws {
+        let component = UniversalComponent(
+            identifier: "com.bridge.test.cleanup",
+            type: .task,
+            displayName: "Cleanup Test"
+        )
+        
+        try await component.initialize()
+        try await component.cleanup()
+        
+        let children = await component.children
+        XCTAssertEqual(children.count, 0)
+    }
+    
+    /// Test component type enumeration
+    func testComponentTypes() {
+        let allTypes = ComponentType.allCases
+        
+        XCTAssertTrue(allTypes.contains(.module))
+        XCTAssertTrue(allTypes.contains(.submodule))
+        XCTAssertTrue(allTypes.contains(.epic))
+        XCTAssertTrue(allTypes.contains(.story))
+        XCTAssertTrue(allTypes.contains(.feature))
+        XCTAssertTrue(allTypes.contains(.task))
+        XCTAssertTrue(allTypes.contains(.widget))
+        XCTAssertTrue(allTypes.contains(.property))
+    }
+}
+```
 
-Execute using granular build system with surgical precision - only change module instantiation and imports, preserve all existing functionality.
+### BUILD SCOPE
+- Target Level: Feature-level (90 seconds)
+- Affected Components: New UniversalTemplate system
+- Build Time: ~90 seconds (Feature-level)
+- Integration: Foundation for all future components
+
+### DOCUMENTATION REQUIREMENTS
+- Ensure comprehensive Swift DocC comments for all public APIs throughout all code
+- Create template usage guide and examples with thorough commenting
+- Document component hierarchy with detailed Swift DocC comments
+- Add inline documentation to support auto-documentation generation
+
+### SUCCESS CRITERIA
+✅ Complete UniversalTemplate directory structure created
+✅ All Swift files compile successfully with comprehensive Swift DocC comments
+✅ Package.swift template with proper dependencies
+✅ Complete CICD workflows for any component
+✅ Comprehensive test suite passes with documented test cases
+✅ Version management system in place with proper commenting
+✅ Template ready for instantiation anywhere in hierarchy
+✅ Swift DocC auto-documentation generation working from code comments
+
+### POST-COMPLETION VERIFICATION
+- Build Test: cd Templates/UniversalTemplate && swift build
+- Test Suite: swift test passes all tests
+- Documentation: Swift DocC comments comprehensive throughout codebase
+- Template Ready: Can be copied and customized for any component type
+
+Execute using granular build system with comprehensive Swift DocC documentation comments throughout all code.
