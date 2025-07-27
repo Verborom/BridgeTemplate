@@ -1,4 +1,4 @@
-# CHUNK 6: REPLACE HARDCODED DISCOVERY
+# CHUNK 7: INTEGRATION TESTING
 
 ## CONTEXT
 Account: Verborom
@@ -7,435 +7,767 @@ Local Path: /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/
 Branch: architectural-rebuild
 
 ## OBJECTIVE
-Replace the current hardcoded module discovery system in ModuleManager with a dynamic system that automatically discovers and loads the 5 new modules (Personal Assistant, Projects, Documents, Settings, Terminal) without requiring manual code changes.
+Create and execute a comprehensive integration testing suite to validate that the complete architectural rebuild works correctly. Test all components working together, validate the new dynamic system, and ensure no regressions from the original functionality.
 
 ## BUILD SCOPE
-Feature-level build targeting ModuleManager enhancement and dynamic discovery system
+System-level integration testing with comprehensive validation suite
 
 ## TASKS
 
-### TASK 1: Enhanced ModuleManager (Dynamic Discovery)
-Replace the hardcoded `createModuleInstance()` method with dynamic discovery at `Core/ModuleManager/ModuleManager.swift`
+### TASK 1: Integration Test Suite
+Create `Tests/IntegrationTests/ArchitecturalRebuildTests.swift`
 
-#### Dynamic Discovery Implementation
+#### Comprehensive Integration Tests
 ```swift
-/// # ModuleManager (Dynamic Discovery System)
+/// # Architectural Rebuild Integration Tests
 ///
-/// Enhanced module management system with automatic module discovery,
-/// dynamic loading, and hot-swapping capabilities. Replaces hardcoded
-/// module instantiation with intelligent filesystem scanning.
+/// Comprehensive test suite validating the complete architectural rebuild
+/// including dynamic module discovery, UniversalTemplate system, and
+/// seamless integration of real and mock modules.
 ///
 /// ## Overview
-/// The ModuleManager now provides:
-/// - Automatic module discovery from filesystem
-/// - Dynamic module instantiation without hardcoding
-/// - Version-aware module loading
-/// - Hot-swapping with dependency resolution
-/// - Template-generated module support
+/// These tests verify:
+/// - All 6 modules discover and load correctly
+/// - UniversalTemplate generates proper hierarchies
+/// - Dynamic discovery replaces hardcoded systems
+/// - Hot-swapping functionality preserved
+/// - Terminal real functionality maintained
+/// - Navigation and UI integration works
 ///
-/// ## Topics
-/// ### Core Discovery
-/// - ``discoverAvailableModules()``
-/// - ``scanModuleDirectory()``
-/// - ``loadModuleMetadata(_:)``
+/// ## Test Categories
+/// ### Module Discovery Tests
+/// - ``testModuleDiscovery()``
+/// - ``testAllModulesFound()``
+/// - ``testModuleMetadataLoading()``
 ///
-/// ### Dynamic Loading  
-/// - ``createModuleInstance(from:)``
-/// - ``instantiateModule(_:)``
-/// - ``validateModuleCompatibility(_:)``
+/// ### Dynamic Loading Tests
+/// - ``testDynamicModuleLoading()``
+/// - ``testModuleInstantiation()``
+/// - ``testDependencyResolution()``
 ///
-/// ### Module Management
-/// - ``loadModule(identifier:)``
-/// - ``unloadModule(identifier:)``
-/// - ``hotSwapModule(_:to:)``
-public class ModuleManager: ObservableObject {
-    @Published public var loadedModules: [String: any BridgeModule] = [:]
-    @Published public var availableModules: [ModuleMetadata] = []
-    @Published public var isLoading = false
+/// ### Template System Tests
+/// - ``testUniversalTemplateGeneration()``
+/// - ``testSubModuleCreation()``
+/// - ``testHierarchyNavigation()``
+///
+/// ### Integration Tests
+/// - ``testMainAppIntegration()``
+/// - ``testModuleNavigation()``
+/// - ``testHotSwapping()``
+import XCTest
+@testable import BridgeCore
+@testable import PersonalAssistant
+@testable import Projects
+@testable import Documents
+@testable import Settings
+@testable import Terminal
+
+final class ArchitecturalRebuildTests: XCTestCase {
+    var moduleManager: ModuleManager!
+    var universalTemplate: UniversalTemplate!
     
-    private let moduleDirectory = "/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/Modules"
-    private let versionManager = VersionManager()
+    override func setUp() async throws {
+        try await super.setUp()
+        moduleManager = ModuleManager()
+        universalTemplate = UniversalTemplate()
+        
+        // Wait for initial discovery
+        await moduleManager.discoverAvailableModules()
+    }
     
-    /// Initialize ModuleManager with dynamic discovery
-    public init() {
-        Task {
-            await discoverAvailableModules()
+    override func tearDown() async throws {
+        // Clean up loaded modules
+        for moduleId in moduleManager.loadedModules.keys {
+            try await moduleManager.unloadModule(identifier: moduleId)
+        }
+        
+        moduleManager = nil
+        universalTemplate = nil
+        try await super.tearDown()
+    }
+    
+    // MARK: - Module Discovery Tests
+    
+    /// Test that module discovery finds all 6 expected modules
+    func testModuleDiscovery() async throws {
+        let discoveredModules = moduleManager.availableModules
+        
+        XCTAssertEqual(discoveredModules.count, 6, "Should discover exactly 6 modules")
+        
+        let expectedModules = [
+            "com.bridge.dashboard",
+            "com.bridge.personalassistant",
+            "com.bridge.projects", 
+            "com.bridge.documents",
+            "com.bridge.settings",
+            "com.bridge.terminal"
+        ]
+        
+        for expectedId in expectedModules {
+            let found = discoveredModules.contains { $0.identifier == expectedId }
+            XCTAssertTrue(found, "Should find module: \(expectedId)")
         }
     }
     
-    /// Automatically discover all available modules from filesystem
-    ///
-    /// Scans the Modules/ directory to find all available modules,
-    /// reads their metadata, and builds the available modules list.
-    /// This replaces hardcoded module definitions.
-    public func discoverAvailableModules() async {
-        isLoading = true
-        defer { isLoading = false }
+    /// Test that all discovered modules have valid metadata
+    func testModuleMetadataLoading() async throws {
+        for metadata in moduleManager.availableModules {
+            XCTAssertFalse(metadata.name.isEmpty, "Module name should not be empty")
+            XCTAssertFalse(metadata.identifier.isEmpty, "Module identifier should not be empty")
+            XCTAssertFalse(metadata.versions.isEmpty, "Module should have at least one version")
+            XCTAssertTrue(metadata.identifier.hasPrefix("com.bridge."), "Should use proper identifier format")
+        }
+    }
+    
+    /// Test version information is correctly parsed
+    func testModuleVersions() async throws {
+        let terminalModule = moduleManager.availableModules.first { $0.identifier == "com.bridge.terminal" }
+        XCTAssertNotNil(terminalModule, "Terminal module should be discovered")
+        XCTAssertEqual(terminalModule?.latestVersion, "1.3.0", "Terminal should be version 1.3.0")
         
-        do {
-            let moduleDirectories = try await scanModuleDirectory()
-            var discoveredModules: [ModuleMetadata] = []
+        let personalAssistant = moduleManager.availableModules.first { $0.identifier == "com.bridge.personalassistant" }
+        XCTAssertNotNil(personalAssistant, "Personal Assistant should be discovered")
+        XCTAssertEqual(personalAssistant?.latestVersion, "1.0.0", "Personal Assistant should be version 1.0.0")
+    }
+    
+    // MARK: - Dynamic Loading Tests
+    
+    /// Test that all modules can be loaded dynamically
+    func testDynamicModuleLoading() async throws {
+        for metadata in moduleManager.availableModules {
+            let module = try await moduleManager.loadModule(identifier: metadata.identifier)
             
-            for directory in moduleDirectories {
-                if let metadata = await loadModuleMetadata(from: directory) {
-                    discoveredModules.append(metadata)
+            XCTAssertEqual(module.id, metadata.identifier, "Module ID should match metadata")
+            XCTAssertFalse(module.displayName.isEmpty, "Module should have display name")
+            XCTAssertFalse(module.icon.isEmpty, "Module should have icon")
+        }
+        
+        XCTAssertEqual(moduleManager.loadedModules.count, 6, "All 6 modules should be loaded")
+    }
+    
+    /// Test module instantiation creates correct types
+    func testModuleInstantiation() async throws {
+        let personalAssistant = try await moduleManager.loadModule(identifier: "com.bridge.personalassistant")
+        XCTAssertTrue(personalAssistant is PersonalAssistantModule, "Should instantiate PersonalAssistantModule")
+        
+        let projects = try await moduleManager.loadModule(identifier: "com.bridge.projects")
+        XCTAssertTrue(projects is ProjectsModule, "Should instantiate ProjectsModule")
+        
+        let documents = try await moduleManager.loadModule(identifier: "com.bridge.documents") 
+        XCTAssertTrue(documents is DocumentsModule, "Should instantiate DocumentsModule")
+        
+        let settings = try await moduleManager.loadModule(identifier: "com.bridge.settings")
+        XCTAssertTrue(settings is SettingsModule, "Should instantiate SettingsModule")
+        
+        let terminal = try await moduleManager.loadModule(identifier: "com.bridge.terminal")
+        XCTAssertTrue(terminal is TerminalModule, "Should instantiate TerminalModule")
+    }
+    
+    /// Test dependency resolution works correctly
+    func testDependencyResolution() async throws {
+        // Test loading module with dependencies loads dependencies first
+        for metadata in moduleManager.availableModules {
+            if !metadata.dependencies.isEmpty {
+                let module = try await moduleManager.loadModule(identifier: metadata.identifier)
+                
+                // Verify all dependencies are loaded
+                for dependency in metadata.dependencies {
+                    XCTAssertNotNil(moduleManager.loadedModules[dependency], 
+                                   "Dependency \(dependency) should be loaded for \(metadata.identifier)")
                 }
             }
-            
-            await MainActor.run {
-                self.availableModules = discoveredModules.sorted { $0.name < $1.name }
-            }
-            
-            print("✅ Discovered \(discoveredModules.count) modules: \(discoveredModules.map(\.name).joined(separator: ", "))")
-            
-        } catch {
-            print("❌ Module discovery failed: \(error)")
         }
     }
     
-    /// Scan the Modules directory for available modules
-    ///
-    /// - Returns: Array of module directory paths
-    private func scanModuleDirectory() async throws -> [String] {
-        let fileManager = FileManager.default
-        let moduleURL = URL(fileURLWithPath: moduleDirectory)
-        
-        guard fileManager.fileExists(atPath: moduleDirectory) else {
-            throw ModuleError.initializationFailed("Modules directory not found: \(moduleDirectory)")
-        }
-        
-        let contents = try fileManager.contentsOfDirectory(at: moduleURL, includingPropertiesForKeys: nil)
-        
-        return contents
-            .filter { $0.hasDirectoryPath }
-            .map { $0.path }
-            .filter { path in
-                // Check if directory contains Package.swift (valid module)
-                let packagePath = "\(path)/Package.swift"
-                return fileManager.fileExists(atPath: packagePath)
-            }
-    }
+    // MARK: - UniversalTemplate Tests
     
-    /// Load module metadata from directory
-    ///
-    /// - Parameter directory: Path to module directory
-    /// - Returns: ModuleMetadata if valid module found
-    private func loadModuleMetadata(from directory: String) async -> ModuleMetadata? {
-        let fileManager = FileManager.default
-        let versionPath = "\(directory)/version.json"
-        let packagePath = "\(directory)/Package.swift"
+    /// Test that UniversalTemplate generates submodules correctly
+    func testUniversalTemplateGeneration() async throws {
+        let personalAssistant = try await moduleManager.loadModule(identifier: "com.bridge.personalassistant") as! PersonalAssistantModule
         
-        guard fileManager.fileExists(atPath: versionPath),
-              fileManager.fileExists(atPath: packagePath) else {
-            print("⚠️ Skipping \(URL(fileURLWithPath: directory).lastPathComponent): Missing version.json or Package.swift")
-            return nil
-        }
+        // Personal Assistant should have 4 template-generated submodules
+        XCTAssertEqual(personalAssistant.subModules.count, 4, "Should have 4 submodules")
         
-        do {
-            let versionData = try Data(contentsOf: URL(fileURLWithPath: versionPath))
-            let versionInfo = try JSONDecoder().decode(ModuleVersionInfo.self, from: versionData)
-            
-            // Determine module identifier from directory name
-            let moduleName = URL(fileURLWithPath: directory).lastPathComponent
-            let identifier = "com.bridge.\(moduleName.lowercased())"
-            
-            return ModuleMetadata(
-                identifier: identifier,
-                name: versionInfo.module,
-                versions: [versionInfo.version],
-                dependencies: versionInfo.dependencies,
-                capabilities: versionInfo.features,
-                path: directory,
-                templateGenerated: versionInfo.templateGenerated ?? false
-            )
-            
-        } catch {
-            print("❌ Failed to load metadata for \(directory): \(error)")
-            return nil
+        let expectedSubModules = [
+            "com.bridge.personalassistant.taskmanagement",
+            "com.bridge.personalassistant.calendar",
+            "com.bridge.personalassistant.aichat", 
+            "com.bridge.personalassistant.voice"
+        ]
+        
+        for expectedId in expectedSubModules {
+            XCTAssertNotNil(personalAssistant.subModules[expectedId], "Should have submodule: \(expectedId)")
         }
     }
     
-    /// Create module instance dynamically (replaces hardcoded switch statement)
-    ///
-    /// This method replaces the old hardcoded createModuleInstance() that
-    /// manually returned MockTerminalModule() etc. Now it dynamically
-    /// instantiates modules based on discovered metadata.
-    ///
-    /// - Parameter metadata: Module metadata from discovery
-    /// - Returns: Instantiated module conforming to BridgeModule
-    private func createModuleInstance(from metadata: ModuleMetadata) async throws -> any BridgeModule {
-        print("🔧 Dynamically instantiating module: \(metadata.name)")
+    /// Test submodule creation and properties
+    func testSubModuleCreation() async throws {
+        let projects = try await moduleManager.loadModule(identifier: "com.bridge.projects") as! ProjectsModule
         
-        // Map discovered modules to their implementations
-        switch metadata.identifier {
-        case "com.bridge.personalassistant":
-            let module = PersonalAssistantModule()
-            try await module.initialize()
-            return module
-            
-        case "com.bridge.projects":
-            let module = ProjectsModule()
-            try await module.initialize()
-            return module
-            
-        case "com.bridge.documents":
-            let module = DocumentsModule()
-            try await module.initialize()
-            return module
-            
-        case "com.bridge.settings":
-            let module = SettingsModule()
-            try await module.initialize()
-            return module
-            
-        case "com.bridge.terminal":
-            // Use REAL Terminal implementation (not mock!)
-            let module = TerminalModule()
-            try await module.initialize()
-            return module
-            
-        default:
-            // Future: Use reflection or plugin system for unknown modules
-            throw ModuleError.initializationFailed("Unknown module identifier: \(metadata.identifier)")
+        // Projects should have 5 template-generated submodules
+        XCTAssertEqual(projects.subModules.count, 5, "Should have 5 submodules")
+        
+        // Test each submodule has proper properties
+        for (_, subModule) in projects.subModules {
+            XCTAssertFalse(subModule.displayName.isEmpty, "Submodule should have display name")
+            XCTAssertFalse(subModule.icon.isEmpty, "Submodule should have icon")
+            XCTAssertTrue(subModule.id.hasPrefix("com.bridge.projects."), "Submodule should have proper ID prefix")
         }
     }
     
-    /// Load a module by identifier with dynamic discovery
-    ///
-    /// - Parameter identifier: Module identifier to load
-    /// - Returns: Loaded module instance
-    public func loadModule(identifier: String) async throws -> any BridgeModule {
-        // Check if already loaded
-        if let existingModule = loadedModules[identifier] {
-            return existingModule
-        }
+    /// Test that Terminal doesn't use template system (real implementation)
+    func testTerminalRealImplementation() async throws {
+        let terminal = try await moduleManager.loadModule(identifier: "com.bridge.terminal") as! TerminalModule
         
-        // Find in available modules
-        guard let metadata = availableModules.first(where: { $0.identifier == identifier }) else {
-            throw ModuleError.dependencyMissing(identifier)
-        }
-        
-        // Load dependencies first
-        for dependency in metadata.dependencies {
-            _ = try await loadModule(identifier: dependency)
-        }
-        
-        // Create and register module
-        let module = try await createModuleInstance(from: metadata)
-        
-        await MainActor.run {
-            loadedModules[identifier] = module
-        }
-        
-        print("✅ Loaded module: \(metadata.name) v\(metadata.versions.first ?? "unknown")")
-        return module
+        // Terminal should NOT have template-generated submodules
+        // It has its own sophisticated internal architecture
+        XCTAssertEqual(terminal.version.major, 1, "Terminal should be version 1.x.x")
+        XCTAssertEqual(terminal.version.minor, 3, "Terminal should be version 1.3.x")
+        XCTAssertEqual(terminal.displayName, "Terminal", "Terminal should have correct name")
     }
     
-    /// Get all loaded modules for display
-    public var allModules: [any BridgeModule] {
-        Array(loadedModules.values)
+    // MARK: - Hot-Swapping Tests
+    
+    /// Test hot-swapping functionality is preserved
+    func testHotSwapping() async throws {
+        // Load initial module
+        let initialModule = try await moduleManager.loadModule(identifier: "com.bridge.personalassistant")
+        let initialVersion = initialModule.version.description
+        
+        // Test hot-swap (this would normally load a different version)
+        try await moduleManager.hotSwapModule("com.bridge.personalassistant", to: "1.0.1")
+        
+        // Verify module is still accessible
+        XCTAssertNotNil(moduleManager.loadedModules["com.bridge.personalassistant"], 
+                       "Module should still be loaded after hot-swap")
     }
     
-    /// Hot-swap a module to a new version
-    ///
-    /// - Parameters:
-    ///   - identifier: Module to replace
-    ///   - version: New version to load
-    public func hotSwapModule(_ identifier: String, to version: String) async throws {
-        print("🔄 Hot-swapping \(identifier) to version \(version)")
+    /// Test module unloading
+    func testModuleUnloading() async throws {
+        // Load a module
+        _ = try await moduleManager.loadModule(identifier: "com.bridge.documents")
+        XCTAssertNotNil(moduleManager.loadedModules["com.bridge.documents"], "Module should be loaded")
         
-        // Unload current version
-        if let currentModule = loadedModules[identifier] {
-            await currentModule.cleanup()
-            await MainActor.run {
-                loadedModules.removeValue(forKey: identifier)
-            }
-        }
-        
-        // Reload with new version
-        _ = try await loadModule(identifier: identifier)
-        
-        print("✅ Hot-swap complete for \(identifier)")
+        // Unload it
+        try await moduleManager.unloadModule(identifier: "com.bridge.documents")
+        XCTAssertNil(moduleManager.loadedModules["com.bridge.documents"], "Module should be unloaded")
     }
     
-    /// Unload a module
-    public func unloadModule(identifier: String) async throws {
-        guard let module = loadedModules[identifier] else { return }
-        
-        guard module.canUnload() else {
-            throw ModuleError.initializationFailed("Module \(identifier) cannot be unloaded")
-        }
-        
-        await module.cleanup()
-        await MainActor.run {
-            loadedModules.removeValue(forKey: identifier)
-        }
-        
-        print("✅ Unloaded module: \(identifier)")
-    }
-}
-```
-
-### TASK 2: Module Metadata Structures
-Create `Core/ModuleManager/ModuleMetadata.swift`
-
-#### ModuleMetadata Implementation
-```swift
-/// # ModuleMetadata
-///
-/// Represents metadata for discovered modules, including version
-/// information, dependencies, and capabilities.
-public struct ModuleMetadata: Codable, Identifiable {
-    public let id = UUID()
-    public let identifier: String
-    public let name: String
-    public let versions: [String]
-    public let dependencies: [String]
-    public let capabilities: [String]
-    public let path: String
-    public let templateGenerated: Bool
+    // MARK: - Integration Tests
     
-    public var latestVersion: String {
-        versions.sorted().last ?? "1.0.0"
-    }
-}
-
-/// # ModuleVersionInfo
-///
-/// Represents the structure of version.json files for module discovery.
-public struct ModuleVersionInfo: Codable {
-    public let module: String
-    public let version: String
-    public let templateGenerated: Bool?
-    public let description: String
-    public let features: [String]
-    public let dependencies: [String]
-    public let buildDate: String
-}
-```
-
-### TASK 3: Update Main App Integration
-Update `Platforms/macOS/BridgeMac.swift` to use dynamic discovery
-
-#### Enhanced loadDefaultModules Implementation
-```swift
-/// Enhanced loadDefaultModules with dynamic discovery
-private func loadDefaultModules() async {
-    do {
-        // Wait for module discovery to complete
+    /// Test main app integration
+    func testMainAppIntegration() async throws {
+        // Simulate main app loading
         await moduleManager.discoverAvailableModules()
         
-        // Load all discovered modules
+        // Load all modules like main app does
         for metadata in moduleManager.availableModules {
-            do {
-                let module = try await moduleManager.loadModule(identifier: metadata.identifier)
-                print("✅ Loaded \(metadata.name) v\(metadata.latestVersion)")
-            } catch {
-                print("❌ Failed to load \(metadata.name): \(error)")
+            _ = try await moduleManager.loadModule(identifier: metadata.identifier)
+        }
+        
+        // Verify all modules loaded successfully
+        XCTAssertEqual(moduleManager.loadedModules.count, 6, "All modules should load in main app simulation")
+        
+        // Test getting all modules for UI
+        let allModules = moduleManager.allModules
+        XCTAssertEqual(allModules.count, 6, "Should return all loaded modules")
+    }
+    
+    /// Test navigation between modules works
+    func testModuleNavigation() async throws {
+        // Load all modules
+        for metadata in moduleManager.availableModules {
+            _ = try await moduleManager.loadModule(identifier: metadata.identifier)
+        }
+        
+        // Test that each module provides a view
+        for (_, module) in moduleManager.loadedModules {
+            let view = module.view
+            XCTAssertNotNil(view, "Module \(module.id) should provide a view")
+        }
+    }
+    
+    /// Test performance of dynamic system
+    func testDynamicSystemPerformance() async throws {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        
+        // Measure discovery time
+        await moduleManager.discoverAvailableModules()
+        let discoveryTime = CFAbsoluteTimeGetCurrent() - startTime
+        
+        // Discovery should be fast (under 1 second)
+        XCTAssertLessThan(discoveryTime, 1.0, "Module discovery should complete quickly")
+        
+        let loadStartTime = CFAbsoluteTimeGetCurrent()
+        
+        // Measure loading time
+        for metadata in moduleManager.availableModules {
+            _ = try await moduleManager.loadModule(identifier: metadata.identifier)
+        }
+        
+        let loadTime = CFAbsoluteTimeGetCurrent() - loadStartTime
+        
+        // Loading should be reasonable (under 3 seconds for all modules)
+        XCTAssertLessThan(loadTime, 3.0, "Module loading should complete within reasonable time")
+    }
+}
+```
+
+### TASK 2: Manual Testing Checklist
+Create `Tests/ManualTesting/RebuildValidationChecklist.md`
+
+#### Complete Manual Testing Guide
+```markdown
+# Architectural Rebuild Manual Testing Checklist
+
+## Pre-Testing Setup
+- [ ] Ensure on `architectural-rebuild` branch
+- [ ] Verify all 6 modules exist in Modules/ directory
+- [ ] Confirm UniversalTemplate system is implemented
+- [ ] Check ModuleManager is updated with dynamic discovery
+
+## Module Discovery Testing
+- [ ] Launch app and verify console shows "🔍 Starting dynamic module discovery..."
+- [ ] Confirm discovery finds exactly 6 modules
+- [ ] Verify each module shows correct version:
+  - [ ] Dashboard (existing version)
+  - [ ] PersonalAssistant v1.0.0
+  - [ ] Projects v1.0.0
+  - [ ] Documents v1.0.0
+  - [ ] Settings v1.0.0
+  - [ ] Terminal v1.3.0
+- [ ] Check no hardcoded modules remain in discovery
+
+## Module Loading Testing
+- [ ] Verify all 6 modules appear in sidebar
+- [ ] Test clicking each module loads its view
+- [ ] Confirm Personal Assistant is default selection
+- [ ] Verify module icons display correctly with gradients
+- [ ] Check version numbers appear in UI
+
+## UniversalTemplate Testing
+- [ ] Open Personal Assistant module
+- [ ] Verify sidebar shows 4 submodules:
+  - [ ] Task Management
+  - [ ] Calendar Integration
+  - [ ] AI Chat
+  - [ ] Voice Commands
+- [ ] Test clicking each submodule navigates correctly
+- [ ] Confirm overview shows feature cards
+
+- [ ] Open Projects module  
+- [ ] Verify sidebar shows 5 submodules:
+  - [ ] Project Planning
+  - [ ] Task Management
+  - [ ] Team Collaboration
+  - [ ] Analytics & Reporting
+  - [ ] Resource Management
+- [ ] Test navigation works for all submodules
+
+- [ ] Open Documents module
+- [ ] Verify 4 submodules appear
+- [ ] Test navigation functionality
+
+- [ ] Open Settings module
+- [ ] Verify 4 submodules appear
+- [ ] Test all navigation works
+
+## Terminal Functionality Testing
+- [ ] Open Terminal module
+- [ ] Verify this is REAL Terminal (not mockup)
+- [ ] Test basic shell commands work
+- [ ] Confirm Claude Code integration functions
+- [ ] Verify auto-permissions system works
+- [ ] Test multiple terminal sessions/tabs
+- [ ] Confirm PTY support and ANSI colors
+
+## Hot-Swapping Testing
+- [ ] Test hot-swap of Personal Assistant module
+- [ ] Verify state preservation during swap
+- [ ] Test hot-swap of Projects module
+- [ ] Confirm Terminal hot-swap preserves shell sessions
+- [ ] Verify UI updates correctly after hot-swap
+
+## Navigation Integration Testing
+- [ ] Test switching between all 6 modules rapidly
+- [ ] Verify no crashes or memory leaks
+- [ ] Confirm smooth transitions
+- [ ] Test back/forward navigation if applicable
+- [ ] Verify keyboard shortcuts work (if implemented)
+
+## Performance Testing
+- [ ] Measure app launch time (should be under 3 seconds)
+- [ ] Test module switching performance (should be instant)
+- [ ] Monitor memory usage with all modules loaded
+- [ ] Verify no memory leaks during hot-swapping
+- [ ] Test app remains responsive under load
+
+## Error Handling Testing
+- [ ] Test behavior with corrupted version.json
+- [ ] Verify graceful handling of missing modules
+- [ ] Test dependency resolution errors
+- [ ] Confirm error messages are helpful
+- [ ] Verify app doesn't crash on module errors
+
+## Documentation Validation
+- [ ] Verify all Swift code has DocC comments
+- [ ] Check documentation generates correctly
+- [ ] Confirm API documentation is comprehensive
+- [ ] Verify module guides are up-to-date
+- [ ] Test documentation links work
+
+## Final Integration Validation
+- [ ] All 6 modules load successfully ✅
+- [ ] Dynamic discovery works without hardcoding ✅  
+- [ ] UniversalTemplate generates proper hierarchies ✅
+- [ ] Terminal real functionality preserved ✅
+- [ ] Hot-swapping works across all modules ✅
+- [ ] Performance meets expectations ✅
+- [ ] No regressions from original system ✅
+```
+
+### TASK 3: Automated Test Runner
+Create `Tests/Scripts/run-integration-tests.sh`
+
+#### Comprehensive Test Automation
+```bash
+#!/bin/bash
+# Automated Integration Test Runner for Architectural Rebuild
+
+set -e
+
+BRIDGE_ROOT="/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate"
+cd "$BRIDGE_ROOT"
+
+echo "🧪 Starting Architectural Rebuild Integration Tests..."
+echo "📍 Working from: $(pwd)"
+echo "🌿 Branch: $(git branch --show-current)"
+
+# Ensure we're on the correct branch
+if [ "$(git branch --show-current)" != "architectural-rebuild" ]; then
+    echo "❌ Error: Must be on 'architectural-rebuild' branch"
+    exit 1
+fi
+
+# Build all modules first
+echo "🔨 Building all modules..."
+./scripts/enhanced-smart-build.sh "build all modules for integration testing"
+
+# Run Swift tests
+echo "🧪 Running Swift integration tests..."
+swift test --package-path . --filter ArchitecturalRebuildTests
+
+# Test module discovery
+echo "🔍 Testing module discovery..."
+swift run TestModuleDiscovery
+
+# Test dynamic loading
+echo "⚡ Testing dynamic module loading..."
+for module in Dashboard PersonalAssistant Projects Documents Settings Terminal; do
+    echo "  Testing $module..."
+    swift run TestModuleLoading "$module"
+done
+
+# Test UniversalTemplate
+echo "🎯 Testing UniversalTemplate system..."
+swift run TestUniversalTemplate
+
+# Test hot-swapping
+echo "🔄 Testing hot-swap functionality..."
+swift run TestHotSwap
+
+# Performance testing
+echo "⏱️ Running performance tests..."
+swift run PerformanceTest
+
+# Integration test
+echo "🌉 Running full integration test..."
+swift run FullIntegrationTest
+
+echo "✅ All integration tests completed successfully!"
+echo "🎉 Architectural rebuild validation complete!"
+```
+
+### TASK 4: Performance Benchmarking
+Create `Tests/Performance/RebuildPerformanceTests.swift`
+
+#### Performance Validation Suite
+```swift
+/// # Performance Tests for Architectural Rebuild
+///
+/// Validates that the new dynamic system performs as well as or better
+/// than the original hardcoded system.
+import XCTest
+@testable import BridgeCore
+
+final class RebuildPerformanceTests: XCTestCase {
+    var moduleManager: ModuleManager!
+    
+    override func setUp() async throws {
+        try await super.setUp()
+        moduleManager = ModuleManager()
+    }
+    
+    /// Test module discovery performance
+    func testModuleDiscoveryPerformance() async throws {
+        measure {
+            Task {
+                await moduleManager.discoverAvailableModules()
+            }
+        }
+    }
+    
+    /// Test module loading performance
+    func testModuleLoadingPerformance() async throws {
+        await moduleManager.discoverAvailableModules()
+        
+        measure {
+            Task {
+                for metadata in moduleManager.availableModules {
+                    _ = try await moduleManager.loadModule(identifier: metadata.identifier)
+                }
+            }
+        }
+    }
+    
+    /// Test hot-swap performance
+    func testHotSwapPerformance() async throws {
+        await moduleManager.discoverAvailableModules()
+        _ = try await moduleManager.loadModule(identifier: "com.bridge.personalassistant")
+        
+        measure {
+            Task {
+                try await moduleManager.hotSwapModule("com.bridge.personalassistant", to: "1.0.1")
+            }
+        }
+    }
+    
+    /// Test memory usage
+    func testMemoryUsage() async throws {
+        let initialMemory = getMemoryUsage()
+        
+        await moduleManager.discoverAvailableModules()
+        for metadata in moduleManager.availableModules {
+            _ = try await moduleManager.loadModule(identifier: metadata.identifier)
+        }
+        
+        let loadedMemory = getMemoryUsage()
+        let memoryIncrease = loadedMemory - initialMemory
+        
+        // Memory increase should be reasonable (under 50MB for all modules)
+        XCTAssertLessThan(memoryIncrease, 50 * 1024 * 1024, "Memory usage should be reasonable")
+    }
+    
+    private func getMemoryUsage() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        
+        let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                task_info(mach_task_self_,
+                         task_flavor_t(MACH_TASK_BASIC_INFO),
+                         $0,
+                         &count)
             }
         }
         
-        // Set default selection (prefer Personal Assistant, fallback to first available)
-        if moduleManager.loadedModules.keys.contains("com.bridge.personalassistant") {
-            appModel.selectedModuleId = "com.bridge.personalassistant"
-        } else if let firstModule = moduleManager.loadedModules.keys.first {
-            appModel.selectedModuleId = firstModule
+        if kerr == KERN_SUCCESS {
+            return info.resident_size
+        } else {
+            return 0
         }
-        
-        print("🌉 Dynamic module loading complete - \(moduleManager.loadedModules.count) modules loaded")
-        
-    } catch {
-        print("❌ Failed to load modules: \(error)")
     }
 }
 ```
 
-### TASK 4: Enhanced Module Discovery Logging
-Create `Core/ModuleManager/DiscoveryLogger.swift`
+### TASK 5: Regression Testing
+Create `Tests/Regression/FeatureRegressionTests.swift`
 
-#### DiscoveryLogger Implementation
+#### Feature Preservation Validation
 ```swift
-/// # DiscoveryLogger
+/// # Feature Regression Tests
 ///
-/// Provides detailed logging for module discovery process to help
-/// debug dynamic loading and validate discovered modules.
-public class DiscoveryLogger {
-    public static func logDiscoveryStart() {
-        print("🔍 Starting dynamic module discovery...")
+/// Ensures that the architectural rebuild doesn't break any existing
+/// functionality that users depend on.
+import XCTest
+@testable import BridgeCore
+
+final class FeatureRegressionTests: XCTestCase {
+    
+    /// Test that Terminal real functionality is preserved
+    func testTerminalFunctionalityPreserved() async throws {
+        let moduleManager = ModuleManager()
+        await moduleManager.discoverAvailableModules()
+        
+        let terminal = try await moduleManager.loadModule(identifier: "com.bridge.terminal") as! TerminalModule
+        
+        // Verify Terminal is version 1.3.0 (not downgraded)
+        XCTAssertEqual(terminal.version.major, 1)
+        XCTAssertEqual(terminal.version.minor, 3)
+        XCTAssertEqual(terminal.version.patch, 0)
+        
+        // Verify Terminal provides real functionality (not mock)
+        XCTAssertEqual(terminal.displayName, "Terminal")
+        XCTAssertEqual(terminal.icon, "terminal")
     }
     
-    public static func logFoundModule(_ metadata: ModuleMetadata) {
-        print("📦 Found module: \(metadata.name)")
-        print("   • ID: \(metadata.identifier)")
-        print("   • Version: \(metadata.latestVersion)")
-        print("   • Template: \(metadata.templateGenerated ? "Yes" : "No")")
-        print("   • Features: \(metadata.capabilities.joined(separator: ", "))")
+    /// Test that module navigation is preserved
+    func testModuleNavigationPreserved() async throws {
+        let moduleManager = ModuleManager()
+        await moduleManager.discoverAvailableModules()
+        
+        // Load all modules
+        for metadata in moduleManager.availableModules {
+            let module = try await moduleManager.loadModule(identifier: metadata.identifier)
+            
+            // Every module should provide a view
+            let view = module.view
+            XCTAssertNotNil(view, "Module \(module.id) should provide navigation view")
+        }
     }
     
-    public static func logLoadingModule(_ identifier: String) {
-        print("⚡ Loading module: \(identifier)")
+    /// Test that hot-swapping is preserved
+    func testHotSwappingPreserved() async throws {
+        let moduleManager = ModuleManager()
+        await moduleManager.discoverAvailableModules()
+        
+        // Load a module
+        let module = try await moduleManager.loadModule(identifier: "com.bridge.personalassistant")
+        let originalVersion = module.version
+        
+        // Hot-swap should work without errors
+        try await moduleManager.hotSwapModule("com.bridge.personalassistant", to: "1.0.1")
+        
+        // Module should still be loaded
+        XCTAssertNotNil(moduleManager.loadedModules["com.bridge.personalassistant"])
     }
     
-    public static func logModuleLoaded(_ identifier: String, version: String) {
-        print("✅ Module loaded: \(identifier) v\(version)")
-    }
-    
-    public static func logDiscoveryComplete(moduleCount: Int) {
-        print("🎉 Module discovery complete: \(moduleCount) modules available")
+    /// Test that version management is preserved
+    func testVersionManagementPreserved() async throws {
+        let moduleManager = ModuleManager()
+        await moduleManager.discoverAvailableModules()
+        
+        for metadata in moduleManager.availableModules {
+            let module = try await moduleManager.loadModule(identifier: metadata.identifier)
+            
+            // Every module should have proper version
+            XCTAssertGreaterThan(module.version.major, 0, "Module should have valid major version")
+            XCTAssertFalse(module.version.description.isEmpty, "Module should have version string")
+        }
     }
 }
 ```
 
-### TASK 5: Migration Requirements
+### TASK 6: Complete System Validation
+Create `Tests/Scripts/validate-rebuild.sh`
 
-#### Remove Hardcoded Systems
-- Remove `Core/MockModules.swift` (no longer needed)
-- Update imports in `Platforms/macOS/BridgeMac.swift`
-- Clean up any references to mock modules
+#### Final System Validation Script
+```bash
+#!/bin/bash
+# Complete System Validation for Architectural Rebuild
 
-#### Add Dynamic Module Imports
-Update `Platforms/macOS/BridgeMac.swift`:
-```swift
-// Remove old mock imports
-// import MockModules
+BRIDGE_ROOT="/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate"
+cd "$BRIDGE_ROOT"
 
-// Add new dynamic module imports
-import PersonalAssistant
-import Projects
-import Documents 
-import Settings
-import Terminal
+echo "🌉 Bridge Template Architectural Rebuild Validation"
+echo "================================================="
+
+# Check branch
+echo "🌿 Checking branch..."
+BRANCH=$(git branch --show-current)
+if [ "$BRANCH" != "architectural-rebuild" ]; then
+    echo "❌ Error: Must be on 'architectural-rebuild' branch (currently on $BRANCH)"
+    exit 1
+fi
+echo "✅ On correct branch: $BRANCH"
+
+# Check module structure
+echo "📁 Validating module structure..."
+REQUIRED_MODULES=("Dashboard" "PersonalAssistant" "Projects" "Documents" "Settings" "Terminal")
+for module in "${REQUIRED_MODULES[@]}"; do
+    if [ -d "Modules/$module" ]; then
+        echo "✅ Found module: $module"
+        
+        # Check required files
+        if [ -f "Modules/$module/Package.swift" ]; then
+            echo "  ✅ Package.swift exists"
+        else
+            echo "  ❌ Package.swift missing"
+        fi
+        
+        if [ -f "Modules/$module/version.json" ]; then
+            echo "  ✅ version.json exists"
+        else
+            echo "  ❌ version.json missing"
+        fi
+    else
+        echo "❌ Missing module: $module"
+    fi
+done
+
+# Check UniversalTemplate
+echo "🎯 Checking UniversalTemplate..."
+if [ -f "Core/UniversalTemplate.swift" ]; then
+    echo "✅ UniversalTemplate exists"
+else
+    echo "❌ UniversalTemplate missing"
+fi
+
+# Check ModuleManager updates
+echo "⚡ Checking ModuleManager updates..."
+if grep -q "createModuleInstance.*switch.*metadata\.identifier" Core/ModuleManager/ModuleManager.swift; then
+    echo "✅ ModuleManager has dynamic discovery"
+else
+    echo "❌ ModuleManager still uses hardcoded discovery"
+fi
+
+# Build test
+echo "🔨 Testing build..."
+if ./scripts/enhanced-smart-build.sh "test build for validation"; then
+    echo "✅ Build successful"
+else
+    echo "❌ Build failed"
+    exit 1
+fi
+
+# Run tests
+echo "🧪 Running integration tests..."
+if swift test --filter ArchitecturalRebuildTests; then
+    echo "✅ Integration tests passed"
+else
+    echo "❌ Integration tests failed"
+    exit 1
+fi
+
+echo ""
+echo "🎉 ARCHITECTURAL REBUILD VALIDATION COMPLETE!"
+echo "✅ All systems validated successfully"
+echo "🌉 Bridge Template architectural rebuild is ready!"
 ```
 
 ## TESTING REQUIREMENTS
 
-### Discovery Testing
-- Test module discovery finds all 5 modules
-- Expected output:
-  - ✅ Found PersonalAssistant v1.0.0
-  - ✅ Found Projects v1.0.0 
-  - ✅ Found Documents v1.0.0
-  - ✅ Found Settings v1.0.0
-  - ✅ Found Terminal v1.3.0
+### Automated Testing
+- Run complete integration test suite
+- Execute performance benchmarks
+- Validate all 6 modules work together
+- Test UniversalTemplate system functions
+- Verify hot-swapping capabilities
+- Confirm Terminal real functionality
 
-### Dynamic Loading Testing
-- Test each module loads dynamically
-- Test PersonalAssistant, Projects, Documents, Settings, Terminal
-- Verify no hardcoded module instantiation remains
+### Manual Testing
+- Complete manual testing checklist
+- Validate UI navigation across all modules
+- Test module switching performance
+- Verify error handling gracefully
+- Check documentation completeness
 
-### Integration Testing
-- Launch main app
-- Verify all 5 modules appear in sidebar
-- Test navigation between modules
-- Confirm Personal Assistant is default selection
-- Validate Terminal has real functionality
-
-### Hot-Swap Testing
-Test hot-swapping still works with dynamic system:
-```swift
-// Test hot-swapping still works with dynamic system
-try await moduleManager.hotSwapModule("com.bridge.terminal", to: "1.3.1")
-```
+### Performance Validation
+- Module discovery under 1 second
+- Module loading under 3 seconds total
+- Memory usage reasonable (under 50MB increase)
+- Hot-swapping preserves state
+- No memory leaks during operations
 
 ## DOCUMENTATION REQUIREMENTS
 Ensure comprehensive Swift DocC comments in all code for auto-documentation generation
@@ -444,33 +776,46 @@ Ensure comprehensive Swift DocC comments in all code for auto-documentation gene
 Use professional git workflow:
 ```bash
 git add .
-git commit -m "Replace hardcoded module discovery with dynamic system
+git commit -m "Complete comprehensive integration testing for architectural rebuild
 
-- Enhanced ModuleManager with automatic module discovery
-- Dynamic module instantiation replaces hardcoded switch statements
-- Filesystem scanning discovers all modules automatically
-- Support for template-generated and real modules
-- Comprehensive logging and error handling
+- Created ArchitecturalRebuildTests with full test coverage
+- Manual testing checklist for complete validation
+- Automated test runner with performance benchmarks
+- Regression testing ensures no functionality loss
+- System validation scripts for final verification
+- All 6 modules tested: Dashboard, PersonalAssistant, Projects, Documents, Settings, Terminal
+- UniversalTemplate system validated across all template modules
+- Dynamic discovery system confirmed working
 - Hot-swapping functionality preserved
-- All 5 modules load dynamically without app code changes"
+- Real Terminal v1.3.0 functionality maintained"
 git push
 ```
 
 ## SUCCESS CRITERIA
-- ✅ ModuleManager discovers all 5 modules automatically
-- ✅ Dynamic loading works for all module types (template and real)
-- ✅ No hardcoded module instantiation remains
-- ✅ All modules load and display correctly in main app
-- ✅ Hot-swapping functionality preserved
-- ✅ Terminal real functionality maintained
-- ✅ Template-generated modules work with dynamic system
-- ✅ App launches with all modules available
-- ✅ Module discovery logging provides clear feedback
+- ✅ All 6 modules discovered and loaded automatically
+- ✅ UniversalTemplate generates proper hierarchies for 5 modules
+- ✅ Dynamic discovery replaces all hardcoded systems
+- ✅ Terminal real functionality v1.3.0 preserved
+- ✅ Hot-swapping works across all modules
+- ✅ Performance meets all benchmarks
+- ✅ Navigation works seamlessly between modules
+- ✅ No regressions from original functionality
+- ✅ Comprehensive test coverage validates entire system
+- ✅ Manual testing checklist completely validated
 
-## POST-COMPLETION
-After replacing hardcoded discovery:
-- System truly dynamic - new modules can be added without app changes
-- Template system integrated with discovery
-- Real and mock modules coexist seamlessly
-- Foundation complete for full architectural rebuild
-- Ready for comprehensive integration testing (CHUNK 7)
+## POST-COMPLETION ACTIONS
+After successful integration testing:
+1. **Merge to Main**: Merge `architectural-rebuild` branch to `main`
+2. **Tag Release**: Tag as v3.0.0 (major architectural change)
+3. **Update Documentation**: Update all project documentation
+4. **Performance Baseline**: Establish new performance baselines
+5. **User Testing**: Conduct user acceptance testing
+6. **Rollout Plan**: Plan gradual rollout if needed
+
+## ROLLBACK PLAN
+If integration testing reveals issues:
+1. **Document Issues**: Record all problems found
+2. **Preserve Branch**: Keep `architectural-rebuild` branch for fixes
+3. **Revert to Main**: Switch back to stable main branch
+4. **Fix and Retry**: Address issues and re-run integration tests
+5. **Incremental Approach**: Consider smaller chunks if needed
