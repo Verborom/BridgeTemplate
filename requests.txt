@@ -1,147 +1,442 @@
-# TERMINAL MODULE INTEGRATION FIX - Real Terminal Module Connection
+# CHUNK 5: CREATE REMAINING 4 MODULES
+
+## CONTEXT
+Account: Verborom
+Repository: https://github.com/Verborom/BridgeTemplate
+Local Path: /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/
+Branch: architectural-rebuild
 
 ## OBJECTIVE
-Fix the integration gap where the real Terminal module (v1.3.0) exists and is fully built but the app still loads MockTerminalModule instead of the real TerminalModule with Claude Code integration and auto-permissions.
+Create the remaining 4 modules for the Bridge Template system: Projects (mockup), Documents (mockup), Settings (mockup), and Terminal (functional). Use the validated UniversalTemplate system to auto-generate hierarchical structures.
 
-## CRITICAL CONTEXT
-Analysis reveals that Chunks 1-3 successfully created a complete Terminal module at `/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/Modules/Terminal/` with:
-- ✅ Real shell processes and PTY support
-- ✅ Claude Code integration with automated onboarding  
-- ✅ Auto-permission system for unattended execution
-- ✅ Multi-session support with tabs
-- ✅ Full ANSI color and escape sequence support
-- ✅ Complete Swift package with successful build artifacts
+## BUILD SCOPE
+Feature-level build targeting new module creation with template integration
 
-However, the main app still uses MockTerminalModule due to hardcoded module creation in ModuleManager.
+## TASKS
 
-## TECHNICAL SPECIFICATION
+### TASK 1: Create Projects Module (Mockup)
+Create comprehensive project management module at `Modules/Projects/`
 
-### 1. UPDATE MODULEMANAGER IMPORTS
-**File**: `Core/ModuleManager/ModuleManager.swift`
-
-Add Terminal package import at the top:
+#### ProjectsModule Implementation
 ```swift
-import SwiftUI
-import Combine
-import Terminal  // Add this import for real Terminal module
-```
-
-### 2. UPDATE CREATEMODULEINSTANCE METHOD
-**File**: `Core/ModuleManager/ModuleManager.swift` (around line 390)
-
-Replace the mock Terminal creation with real module:
-```swift
-/// Create module instance from metadata
-private func createModuleInstance(from metadata: ModuleMetadata) async throws -> any BridgeModule {
-    // Real module implementations with Terminal integration complete
-    switch metadata.identifier {
-    case "com.bridge.dashboard":
-        return MockDashboardModule()
-    case "com.bridge.projects":
-        return MockProjectsModule()
-    case "com.bridge.terminal":
-        // ✅ REAL Terminal module with Claude Code integration and auto-permissions
-        return TerminalModule()
-    default:
-        throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
+/// # Projects Module
+///
+/// Comprehensive project management module providing task tracking,
+/// team collaboration, and workflow automation. This module demonstrates
+/// advanced template-generated hierarchy with multiple feature areas.
+///
+/// ## Overview
+/// The Projects module showcases:
+/// - Multi-level template generation
+/// - Project lifecycle management
+/// - Team collaboration features
+/// - Advanced mockup capabilities
+///
+/// ## Features
+/// - Project Planning SubModule
+/// - Task Management SubModule
+/// - Team Collaboration SubModule
+/// - Analytics & Reporting SubModule
+/// - Resource Management SubModule
+public class ProjectsModule: BridgeModule {
+    public let id = "com.bridge.projects"
+    public let displayName = "Projects"
+    public let icon = "folder.badge.gearshape"
+    public let version = ModuleVersion(major: 1, minor: 0, patch: 0)
+    public var dependencies: [String] = []
+    public var subModules: [String: any BridgeModule] = [:]
+    
+    public var view: AnyView {
+        AnyView(ProjectsView(module: self))
     }
+    
+    public func initialize() async throws {
+        let template = UniversalTemplate()
+        
+        subModules = try await template.generateSubModules(
+            for: self,
+            subModuleSpecs: [
+                SubModuleSpec(
+                    id: "com.bridge.projects.planning",
+                    name: "Project Planning",
+                    icon: "map",
+                    mockFeatures: [
+                        "Create and define project scope",
+                        "Set milestones and deadlines",
+                        "Resource allocation planning",
+                        "Risk assessment and mitigation"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.projects.tasks",
+                    name: "Task Management", 
+                    icon: "checklist",
+                    mockFeatures: [
+                        "Create and assign tasks",
+                        "Track progress and completion",
+                        "Priority and dependency management",
+                        "Time tracking and logging"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.projects.collaboration",
+                    name: "Team Collaboration",
+                    icon: "person.3",
+                    mockFeatures: [
+                        "Team communication channels",
+                        "File sharing and version control",
+                        "Review and approval workflows",
+                        "Meeting scheduling and notes"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.projects.analytics",
+                    name: "Analytics & Reporting",
+                    icon: "chart.bar.xaxis",
+                    mockFeatures: [
+                        "Project performance metrics",
+                        "Team productivity analysis",
+                        "Budget and resource reports",
+                        "Custom dashboard creation"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.projects.resources",
+                    name: "Resource Management",
+                    icon: "square.stack.3d.up",
+                    mockFeatures: [
+                        "Team member allocation",
+                        "Equipment and tool tracking",
+                        "Budget management",
+                        "Vendor and contractor coordination"
+                    ]
+                )
+            ]
+        )
+    }
+    
+    public func cleanup() async {}
+    public func canUnload() -> Bool { true }
+    public func receiveMessage(_ message: ModuleMessage) async throws {}
 }
 ```
 
-### 3. UPDATE BRIDGEMAC IMPORTS
-**File**: `Platforms/macOS/BridgeMac.swift`
+#### Required Files:
+- `Modules/Projects/Sources/ProjectsModule.swift`
+- `Modules/Projects/Sources/ProjectsView.swift` - Professional project management interface
+- `Modules/Projects/Package.swift`
+- `Modules/Projects/version.json` (v1.0.0)
 
-Replace commented import with real import:
+### TASK 2: Create Documents Module (Mockup)
+Create advanced document management module at `Modules/Documents/`
+
+#### DocumentsModule Implementation
 ```swift
-import SwiftUI
-import Terminal  // Real Terminal module import
+/// # Documents Module
+///
+/// Advanced document management and collaboration platform with
+/// version control, real-time editing, and intelligent organization.
+/// Demonstrates sophisticated template-generated document workflows.
+///
+/// ## Features
+/// - Document Creation & Editing SubModule
+/// - Version Control SubModule
+/// - Collaboration Tools SubModule
+/// - AI-Powered Organization SubModule
+public class DocumentsModule: BridgeModule {
+    public let id = "com.bridge.documents"
+    public let displayName = "Documents"
+    public let icon = "doc.richtext"
+    public let version = ModuleVersion(major: 1, minor: 0, patch: 0)
+    public var dependencies: [String] = []
+    public var subModules: [String: any BridgeModule] = [:]
+    
+    public var view: AnyView {
+        AnyView(DocumentsView(module: self))
+    }
+    
+    public func initialize() async throws {
+        let template = UniversalTemplate()
+        
+        subModules = try await template.generateSubModules(
+            for: self,
+            subModuleSpecs: [
+                SubModuleSpec(
+                    id: "com.bridge.documents.editor",
+                    name: "Document Editor",
+                    icon: "square.and.pencil",
+                    mockFeatures: [
+                        "Rich text editing with formatting",
+                        "Real-time collaborative editing",
+                        "Template-based document creation",
+                        "Advanced typography controls"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.documents.versioning",
+                    name: "Version Control",
+                    icon: "clock.arrow.trianglehead.counterclockwise.rotate.90",
+                    mockFeatures: [
+                        "Automatic version tracking",
+                        "Compare document versions",
+                        "Restore previous versions",
+                        "Branch and merge workflows"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.documents.collaboration",
+                    name: "Collaboration Tools",
+                    icon: "person.2.wave.2",
+                    mockFeatures: [
+                        "Share documents with permissions",
+                        "Comments and annotations",
+                        "Review and approval workflows",
+                        "Team workspace organization"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.documents.ai",
+                    name: "AI Organization",
+                    icon: "brain",
+                    mockFeatures: [
+                        "Smart document categorization",
+                        "AI-powered search and discovery",
+                        "Content suggestions and improvements",
+                        "Automatic tagging and metadata"
+                    ]
+                )
+            ]
+        )
+    }
+    
+    public func cleanup() async {}
+    public func canUnload() -> Bool { true }
+    public func receiveMessage(_ message: ModuleMessage) async throws {}
+}
 ```
 
-Remove these commented lines:
+#### Required Files:
+- `Modules/Documents/Sources/DocumentsModule.swift`
+- `Modules/Documents/Sources/DocumentsView.swift` - Document management and editing interface
+- `Modules/Documents/Package.swift`
+- `Modules/Documents/version.json` (v1.0.0)
+
+### TASK 3: Create Settings Module (Mockup)
+Create comprehensive settings module at `Modules/Settings/`
+
+#### SettingsModule Implementation
 ```swift
-// NOTE: Terminal module would be imported here in production build
-// import Terminal
+/// # Settings Module
+///
+/// Comprehensive application settings and configuration management.
+/// Provides user preferences, system configuration, and administrative
+/// controls with template-generated organization.
+///
+/// ## Features
+/// - User Preferences SubModule
+/// - System Configuration SubModule
+/// - Privacy & Security SubModule
+/// - Advanced Settings SubModule
+public class SettingsModule: BridgeModule {
+    public let id = "com.bridge.settings"
+    public let displayName = "Settings"
+    public let icon = "gearshape"
+    public let version = ModuleVersion(major: 1, minor: 0, patch: 0)
+    public var dependencies: [String] = []
+    public var subModules: [String: any BridgeModule] = [:]
+    
+    public var view: AnyView {
+        AnyView(SettingsView(module: self))
+    }
+    
+    public func initialize() async throws {
+        let template = UniversalTemplate()
+        
+        subModules = try await template.generateSubModules(
+            for: self,
+            subModuleSpecs: [
+                SubModuleSpec(
+                    id: "com.bridge.settings.preferences",
+                    name: "User Preferences",
+                    icon: "person.circle",
+                    mockFeatures: [
+                        "Appearance and theme settings",
+                        "Notification preferences",
+                        "Language and region settings",
+                        "Accessibility options"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.settings.system",
+                    name: "System Configuration", 
+                    icon: "cpu",
+                    mockFeatures: [
+                        "Performance optimization",
+                        "Storage and cache management",
+                        "Network and connectivity",
+                        "Developer and debug options"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.settings.security",
+                    name: "Privacy & Security",
+                    icon: "lock.shield",
+                    mockFeatures: [
+                        "Account and authentication",
+                        "Data privacy controls",
+                        "Security audit logs",
+                        "Permissions management"
+                    ]
+                ),
+                SubModuleSpec(
+                    id: "com.bridge.settings.advanced",
+                    name: "Advanced Settings",
+                    icon: "slider.horizontal.3",
+                    mockFeatures: [
+                        "Module management and updates",
+                        "Backup and restore options",
+                        "Integration configurations",
+                        "Experimental features"
+                    ]
+                )
+            ]
+        )
+    }
+    
+    public func cleanup() async {}
+    public func canUnload() -> Bool { true }
+    public func receiveMessage(_ message: ModuleMessage) async throws {}
+}
 ```
 
-### 4. VERIFY PACKAGE DEPENDENCIES
-**File**: `Platforms/macOS/Package.swift`
+#### Required Files:
+- `Modules/Settings/Sources/SettingsModule.swift`
+- `Modules/Settings/Sources/SettingsView.swift` - Comprehensive settings organization
+- `Modules/Settings/Package.swift`
+- `Modules/Settings/version.json` (v1.0.0)
 
-Ensure Terminal dependency exists (should already be present):
+### TASK 4: Integrate Terminal Module (Functional)
+Integrate existing real Terminal implementation into new module system
+
+#### TerminalModule Integration
 ```swift
-dependencies: [
-    .package(path: "../../Modules/Terminal"),  // Verify this exists
-    .package(path: "../../Modules/Dashboard")
-],
-targets: [
-    .executableTarget(
-        name: "BridgeMac",
-        dependencies: [
-            .product(name: "Terminal", package: "Terminal"),  // Verify this exists
-            .product(name: "Dashboard", package: "Dashboard")
-        ],
-        // ... rest of target config
-    )
-]
+/// # Terminal Module (Functional Implementation)
+///
+/// Full-featured terminal emulator with Claude Code integration,
+/// auto-permissions, and PTY support. This is the REAL implementation
+/// that replaces the mock version.
+///
+/// ## Overview
+/// Unlike other modules in this chunk, Terminal uses the existing
+/// functional implementation from Modules/Terminal/ directory.
+/// This module provides:
+/// - Real shell processes and command execution
+/// - Claude Code integration with automated onboarding
+/// - Auto-permission system with keychain integration
+/// - Multiple terminal sessions with tabs
+/// - Full PTY support and ANSI colors
+/// - Unattended execution capabilities
+///
+/// ## Integration Notes
+/// The Terminal module already exists as a complete implementation.
+/// This chunk integrates it into the new module system structure
+/// while preserving all existing functionality.
+public class TerminalModule: BridgeModule {
+    public let id = "com.bridge.terminal"
+    public let displayName = "Terminal"
+    public let icon = "terminal"
+    public let version = ModuleVersion(major: 1, minor: 3, patch: 0)
+    public var dependencies: [String] = []
+    
+    // Terminal doesn't use template-generated submodules
+    // It has its own sophisticated internal architecture
+    public var subModules: [String: any BridgeModule] = [:]
+    
+    public var view: AnyView {
+        AnyView(TerminalView())
+    }
+    
+    public func initialize() async throws {
+        // Initialize real terminal functionality
+        // Use existing Terminal implementation from Modules/Terminal/
+        // This includes Claude Code integration, auto-permissions, PTY setup
+    }
+    
+    public func cleanup() async {}
+    public func canUnload() -> Bool { true }
+    public func receiveMessage(_ message: ModuleMessage) async throws {}
+}
 ```
 
-### 5. UPDATE MODULE METADATA VERSION
-**File**: `Core/ModuleManager/ModuleManager.swift` (discoverAvailableModules method)
+#### Special Requirements for Terminal:
+1. **Preserve existing functionality** - Don't break Claude Code integration
+2. **Maintain version 1.3.0** - Don't downgrade existing features
+3. **Keep real implementation** - Use existing shell processes, PTY support
+4. **Integrate auto-permissions** - Preserve keychain integration
+5. **Test thoroughly** - Ensure no regression in terminal functionality
 
-Update Terminal module metadata to reflect real version:
-```swift
-ModuleMetadata(
-    identifier: "com.bridge.terminal",
-    name: "Terminal",
-    versions: ["1.3.0"], // Real version with all features
-    dependencies: [],
-    capabilities: [
-        "Native macOS Terminal with PTY support",
-        "Claude Code integration with automated onboarding",
-        "Auto-permission system with keychain security",
-        "Multi-session support with tabs and management",
-        "Full ANSI color and escape sequence support",
-        "Unattended execution for CI/CD workflows",
-        "Hot-swappable for runtime updates"
-    ]
-)
-```
-
-## BUILD SCOPE
-- **Target Level**: System-level integration (5+ minutes)
-- **Affected Components**: ModuleManager, BridgeMac imports, Terminal package integration
-- **Hot-swap Capability**: Yes - MockTerminalModule will be replaced with real TerminalModule
-- **Integration Complexity**: Medium - requires import changes and module instantiation updates
-
-## DOCUMENTATION REQUIREMENTS
-- Update build logs to show real Terminal v1.3.0 loading
-- Document Terminal module capabilities in module metadata
-- Include integration success confirmation in build output
+#### Required Files:
+- `Modules/Terminal/Sources/TerminalModule.swift` - **Integrate existing package**
+- `Modules/Terminal/Sources/TerminalView.swift` - **Use existing real implementation**
+- `Modules/Terminal/Package.swift` - **Integrate existing package**
+- `Modules/Terminal/version.json` (v1.3.0 - preserve existing version)
 
 ## TESTING REQUIREMENTS
-1. **Module Loading**: Verify TerminalModule() loads instead of MockTerminalModule()
-2. **Shell Integration**: Confirm real shell processes start and execute commands
-3. **Claude Code Features**: Verify automated onboarding and session management work
-4. **Auto-Permission System**: Test keychain integration and unattended execution
-5. **UI Integration**: Verify Terminal views and controls display correctly
-6. **Multi-Session Support**: Test terminal tabs and session switching
-7. **Version Display**: Confirm Terminal shows v1.3.0 in sidebar
+
+### Individual Module Tests
+Test each module independently:
+```bash
+# Test each module can be instantiated
+./scripts/test-module.sh Projects
+./scripts/test-module.sh Documents  
+./scripts/test-module.sh Settings
+./scripts/test-module.sh Terminal
+```
+
+### Template Integration Tests
+- Verify UniversalTemplate generates submodules for Projects, Documents, Settings
+- Confirm Terminal integrates with existing real implementation
+- Test navigation works across all modules
+- Validate all modules load in main app
+
+### Functionality Tests
+- **Projects**: Test mockup navigation and feature displays
+- **Documents**: Test mockup document workflows
+- **Settings**: Test mockup configuration interfaces
+- **Terminal**: Test REAL terminal functionality (shell processes, Claude integration)
+
+## DOCUMENTATION REQUIREMENTS
+Ensure comprehensive Swift DocC comments in all code for auto-documentation generation
+
+## GIT WORKFLOW
+Use professional git workflow:
+```bash
+git add Modules/
+git commit -m "Create remaining 4 modules using UniversalTemplate system
+
+- Projects module with 5 template-generated submodules
+- Documents module with 4 template-generated submodules  
+- Settings module with 4 template-generated submodules
+- Terminal module integration preserving v1.3.0 functionality
+- All modules use validated UniversalTemplate system
+- Complete mockup navigation for Projects, Documents, Settings
+- Real Terminal functionality maintained with Claude Code integration"
+git push
+```
 
 ## SUCCESS CRITERIA
-- ✅ Real TerminalModule loads instead of MockTerminalModule
-- ✅ Terminal sidebar shows v1.3.0 with advanced capability indicators
-- ✅ Claude Code integration button appears and functions
-- ✅ Auto-permission system button appears and functions  
-- ✅ Real shell commands execute in terminal sessions
-- ✅ Multi-session tabs work with session management
-- ✅ Build completes successfully with Terminal package integration
-- ✅ Hot-swap capability maintains all Terminal functionality
+- ✅ All 4 modules instantiate successfully
+- ✅ Projects, Documents, Settings show template-generated submodules
+- ✅ Terminal preserves all existing real functionality
+- ✅ Navigation works between all modules
+- ✅ Each module displays appropriate interface
+- ✅ Template system works for 3 mockup modules
+- ✅ Real Terminal integration maintained
+- ✅ All modules properly documented with Swift DocC
 
 ## POST-COMPLETION
-After successful integration:
-- Terminal module will provide real shell processes with PTY support
-- Claude Code integration will enable automated onboarding workflows
-- Auto-permission system will handle sudo and developer tool permissions
-- Multi-session support will provide professional terminal experience
-- Bridge Template will have complete Terminal functionality replacing mock
-
-Execute using granular build system with surgical precision - only change module instantiation and imports, preserve all existing functionality.
+After creating all 4 modules:
+- 5 total modules available (Personal Assistant + these 4)
+- Template system validated across multiple module types
+- Ready for hardcoded discovery system replacement
+- Foundation complete for full architectural rebuild
