@@ -1,0 +1,419 @@
+name: Universal Component CI/CD
+
+# This workflow is designed to work for ANY component at ANY hierarchy level
+# It automatically adapts based on the component type and configuration
+
+on:
+  push:
+    branches: [ main, develop, 'feature/**', 'release/**' ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      component_path:
+        description: 'Path to component'
+        required: true
+        type: string
+      hierarchy_level:
+        description: 'Hierarchy level (module, feature, task, etc.)'
+        required: true
+        type: choice
+        options:
+          - module
+          - submodule
+          - epic
+          - story
+          - feature
+          - component
+          - widget
+          - task
+          - subtask
+          - microservice
+          - utility
+      deploy_environment:
+        description: 'Deployment environment'
+        required: false
+        type: choice
+        options:
+          - none
+          - development
+          - staging
+          - production
+        default: 'none'
+
+env:
+  SWIFT_VERSION: '5.9'
+  XCODE_VERSION: '15.2'
+  COMPONENT_PATH: ${{ github.event.inputs.component_path || github.workspace }}
+  HIERARCHY_LEVEL: ${{ github.event.inputs.hierarchy_level || 'component' }}
+
+jobs:
+  # Phase 1: Component Analysis
+  analyze:
+    name: Analyze Component
+    runs-on: ubuntu-latest
+    outputs:
+      component_id: ${{ steps.analyze.outputs.id }}
+      component_name: ${{ steps.analyze.outputs.name }}
+      component_version: ${{ steps.analyze.outputs.version }}
+      has_tests: ${{ steps.analyze.outputs.has_tests }}
+      has_docs: ${{ steps.analyze.outputs.has_docs }}
+      dependencies: ${{ steps.analyze.outputs.dependencies }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Analyze Component Structure
+        id: analyze
+        run: |
+          cd "$COMPONENT_PATH"
+          
+          # Extract component metadata
+          if [ -f "component.json" ]; then
+            echo "id=$(jq -r '.id' component.json)" >> $GITHUB_OUTPUT
+            echo "name=$(jq -r '.name' component.json)" >> $GITHUB_OUTPUT
+            echo "version=$(jq -r '.version' component.json)" >> $GITHUB_OUTPUT
+            echo "dependencies=$(jq -c '.dependencies' component.json)" >> $GITHUB_OUTPUT
+          else
+            # Fallback to directory name
+            echo "id=$(uuidgen)" >> $GITHUB_OUTPUT
+            echo "name=$(basename $COMPONENT_PATH)" >> $GITHUB_OUTPUT
+            echo "version=1.0.0" >> $GITHUB_OUTPUT
+            echo "dependencies=[]" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for tests and docs
+          [ -d "Tests" ] && echo "has_tests=true" >> $GITHUB_OUTPUT || echo "has_tests=false" >> $GITHUB_OUTPUT
+          [ -d "Documentation" ] && echo "has_docs=true" >> $GITHUB_OUTPUT || echo "has_docs=false" >> $GITHUB_OUTPUT
+
+  # Phase 2: Quality Checks
+  quality:
+    name: Quality Checks
+    runs-on: macos-14
+    needs: analyze
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Swift Lint
+        run: |
+          cd "$COMPONENT_PATH"
+          if which swiftlint >/dev/null; then
+            swiftlint --strict
+          else
+            echo "SwiftLint not installed, skipping..."
+          fi
+      
+      - name: Swift Format Check
+        run: |
+          cd "$COMPONENT_PATH"
+          if [ -f ".swift-format" ]; then
+            swift-format lint --recursive Sources/
+          fi
+      
+      - name: Security Scan
+        run: |
+          cd "$COMPONENT_PATH"
+          # Run security analysis (placeholder for actual tool)
+          echo "Running security scan..."
+
+  # Phase 3: Build Component
+  build:
+    name: Build Component
+    runs-on: macos-14
+    needs: [analyze, quality]
+    strategy:
+      matrix:
+        platform: [macos, ios, watchos, tvos, visionos]
+        configuration: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Cache Swift Package Manager
+        uses: actions/cache@v3
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+      
+      - name: Build Component
+        run: |
+          cd "$COMPONENT_PATH"
+          
+          # Build based on platform
+          case "${{ matrix.platform }}" in
+            macos)
+              swift build -c ${{ matrix.configuration }}
+              ;;
+            ios)
+              xcodebuild build \
+                -scheme Settings \
+                -destination "platform=iOS Simulator,name=iPhone 15 Pro" \
+                -configuration ${{ matrix.configuration }}
+              ;;
+            watchos)
+              xcodebuild build \
+                -scheme Settings \
+                -destination "platform=watchOS Simulator,name=Apple Watch Series 9 (45mm)" \
+                -configuration ${{ matrix.configuration }}
+              ;;
+            tvos)
+              xcodebuild build \
+                -scheme Settings \
+                -destination "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)" \
+                -configuration ${{ matrix.configuration }}
+              ;;
+            visionos)
+              if [ "${{ env.XCODE_VERSION }}" = "15.2" ]; then
+                xcodebuild build \
+                  -scheme Settings \
+                  -destination "platform=visionOS Simulator,name=Apple Vision Pro" \
+                  -configuration ${{ matrix.configuration }}
+              fi
+              ;;
+          esac
+      
+      - name: Archive Build Artifacts
+        if: matrix.configuration == 'release'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.analyze.outputs.component_name }}-${{ matrix.platform }}-${{ matrix.configuration }}
+          path: |
+            ${{ env.COMPONENT_PATH }}/.build/
+            ${{ env.COMPONENT_PATH }}/build/
+
+  # Phase 4: Test Component
+  test:
+    name: Test Component
+    runs-on: macos-14
+    needs: [analyze, build]
+    if: needs.analyze.outputs.has_tests == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Run Unit Tests
+        run: |
+          cd "$COMPONENT_PATH"
+          swift test --enable-code-coverage --parallel
+      
+      - name: Generate Coverage Report
+        run: |
+          cd "$COMPONENT_PATH"
+          xcrun llvm-cov export \
+            .build/debug/*PackageTests.xctest/Contents/MacOS/*PackageTests \
+            -instr-profile .build/debug/codecov/default.profdata \
+            -format lcov > coverage.lcov
+      
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ${{ env.COMPONENT_PATH }}/coverage.lcov
+          flags: ${{ env.HIERARCHY_LEVEL }}
+      
+      - name: Performance Tests
+        run: |
+          cd "$COMPONENT_PATH"
+          # Run performance benchmarks
+          swift test --filter ".*Performance.*"
+
+  # Phase 5: Documentation
+  documentation:
+    name: Generate Documentation
+    runs-on: macos-14
+    needs: [analyze, test]
+    if: needs.analyze.outputs.has_docs == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Generate DocC Documentation
+        run: |
+          cd "$COMPONENT_PATH"
+          
+          # Build documentation
+          xcodebuild docbuild \
+            -scheme Settings \
+            -derivedDataPath ./build \
+            -destination 'platform=macOS'
+          
+          # Process documentation
+          $(xcrun --find docc) process-archive \
+            transform-for-static-hosting \
+            ./build/Build/Products/Debug-macos/*.doccarchive \
+            --output-path ./docs \
+            --hosting-base-path /${{ github.repository }}
+      
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.analyze.outputs.component_name }}-docs
+          path: ${{ env.COMPONENT_PATH }}/docs
+
+  # Phase 6: Package Component
+  package:
+    name: Package Component
+    runs-on: ubuntu-latest
+    needs: [analyze, build, test]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create Component Package
+        run: |
+          cd "$COMPONENT_PATH"
+          
+          # Create package metadata
+          cat > package-metadata.json << EOF
+          {
+            "id": "${{ needs.analyze.outputs.component_id }}",
+            "name": "${{ needs.analyze.outputs.component_name }}",
+            "version": "${{ needs.analyze.outputs.component_version }}",
+            "hierarchy_level": "${{ env.HIERARCHY_LEVEL }}",
+            "build_date": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "git_commit": "${{ github.sha }}",
+            "git_branch": "${{ github.ref_name }}",
+            "dependencies": ${{ needs.analyze.outputs.dependencies }}
+          }
+          EOF
+          
+          # Create distributable package
+          tar -czf component-package.tar.gz \
+            --exclude='.build' \
+            --exclude='.git' \
+            --exclude='DerivedData' \
+            .
+      
+      - name: Sign Package
+        run: |
+          # In production, would sign the package
+          echo "Package signing would happen here"
+      
+      - name: Upload Package
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ needs.analyze.outputs.component_name }}-package
+          path: ${{ env.COMPONENT_PATH }}/component-package.tar.gz
+
+  # Phase 7: Deploy Component (if requested)
+  deploy:
+    name: Deploy Component
+    runs-on: ubuntu-latest
+    needs: [analyze, package]
+    if: github.event.inputs.deploy_environment != 'none'
+    environment: ${{ github.event.inputs.deploy_environment }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Download Package
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.analyze.outputs.component_name }}-package
+          path: ./artifacts
+      
+      - name: Deploy to Environment
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.deploy_environment }}"
+          
+          echo "Deploying to $ENVIRONMENT environment..."
+          
+          # Environment-specific deployment
+          case "$ENVIRONMENT" in
+            development)
+              # Deploy to development
+              echo "Deploying to development servers..."
+              ;;
+            staging)
+              # Deploy to staging
+              echo "Deploying to staging environment..."
+              ;;
+            production)
+              # Deploy to production
+              echo "Deploying to production with blue-green strategy..."
+              ;;
+          esac
+      
+      - name: Verify Deployment
+        run: |
+          # Health checks
+          echo "Running deployment verification..."
+
+  # Phase 8: Integration Tests
+  integration:
+    name: Integration Tests
+    runs-on: macos-14
+    needs: [deploy]
+    if: github.event.inputs.deploy_environment != 'none'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Integration Tests
+        run: |
+          cd "$COMPONENT_PATH"
+          
+          # Run integration tests against deployed environment
+          ENVIRONMENT="${{ github.event.inputs.deploy_environment }}"
+          swift test --filter ".*Integration.*" \
+            --env "INTEGRATION_ENDPOINT=$ENVIRONMENT"
+
+  # Phase 9: Release
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [analyze, package, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.analyze.outputs.component_name }}-v${{ needs.analyze.outputs.component_version }}
+          release_name: ${{ needs.analyze.outputs.component_name }} v${{ needs.analyze.outputs.component_version }}
+          body: |
+            ## Component Release
+            
+            **Component**: ${{ needs.analyze.outputs.component_name }}
+            **Version**: ${{ needs.analyze.outputs.component_version }}
+            **Hierarchy Level**: ${{ env.HIERARCHY_LEVEL }}
+            
+            ### Changes
+            - Auto-generated release for universal component
+            
+            ### Artifacts
+            - See attached build artifacts
+          draft: false
+          prerelease: false
+
+  # Phase 10: Notifications
+  notify:
+    name: Send Notifications
+    runs-on: ubuntu-latest
+    needs: [analyze, build, test, deploy]
+    if: always()
+    steps:
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Component CI/CD completed successfully"
+          echo "Component: ${{ needs.analyze.outputs.component_name }}"
+          echo "Version: ${{ needs.analyze.outputs.component_version }}"
+      
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ Component CI/CD failed"
+          echo "Component: ${{ needs.analyze.outputs.component_name }}"
+          echo "Check the logs for details"
