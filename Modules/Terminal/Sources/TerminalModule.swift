@@ -153,7 +153,7 @@ public class TerminalModule: BridgeModule {
     /// Current version of the Terminal module
     ///
     /// Follows semantic versioning for clear change communication.
-    public let version = ModuleVersion(major: 1, minor: 2, patch: 0)
+    public let version = ModuleVersion(major: 1, minor: 3, patch: 0)
     
     /// View model managing terminal state
     @Published private var viewModel = TerminalViewModel()
@@ -163,6 +163,9 @@ public class TerminalModule: BridgeModule {
     
     /// Claude Code integration
     @Published private var claudeIntegration = ClaudeCodeIntegration()
+    
+    /// Auto-permission system
+    @Published private var autoPermissionSystem = AutoPermissionSystem()
     
     /// Sub-modules (Terminal has none currently)
     public let subModules: [String: any BridgeModule] = [:]
@@ -176,7 +179,7 @@ public class TerminalModule: BridgeModule {
     /// customizable themes, and full terminal emulation.
     public var view: AnyView {
         AnyView(
-            TerminalView(viewModel: viewModel, claudeIntegration: claudeIntegration)
+            TerminalView(viewModel: viewModel, claudeIntegration: claudeIntegration, autoPermissionSystem: autoPermissionSystem)
                 .environmentObject(viewModel)
         )
     }
@@ -210,6 +213,9 @@ public class TerminalModule: BridgeModule {
         
         // Initialize Claude integration
         try await claudeIntegration.initialize()
+        
+        // Initialize auto-permission system
+        try await autoPermissionSystem.initialize()
         
         print("✅ Terminal module initialized successfully")
     }
@@ -309,7 +315,25 @@ public class TerminalModule: BridgeModule {
     ///
     /// - Parameter command: Command to execute
     public func executeCommand(_ command: String) async {
-        await viewModel.activeSession?.execute(command)
+        // Check if auto-permission system is active and should handle this command
+        if autoPermissionSystem.isActive && requiresPermissions(command) {
+            do {
+                let result = try await autoPermissionSystem.executeWithPermissions(command)
+                // Display result in terminal
+                await viewModel.activeSession?.displayOutput(result.output)
+            } catch {
+                await viewModel.activeSession?.displayOutput("Auto-permission error: \(error.localizedDescription)")
+            }
+        } else {
+            await viewModel.activeSession?.execute(command)
+        }
+    }
+    
+    /// Check if command requires permissions
+    private func requiresPermissions(_ command: String) -> Bool {
+        // Commands that typically require permissions
+        let permissionKeywords = ["sudo", "chmod", "chown", "/System/", "/Library/", "codesign", "xcodebuild"]
+        return permissionKeywords.contains { command.contains($0) }
     }
     
     /// Execute a Bridge module command
@@ -400,6 +424,9 @@ public struct TerminalView: View {
     /// Claude integration
     let claudeIntegration: ClaudeCodeIntegration
     
+    /// Auto-permission system
+    let autoPermissionSystem: AutoPermissionSystem
+    
     /// Currently selected session tab
     @State private var selectedSessionId: String?
     
@@ -408,6 +435,9 @@ public struct TerminalView: View {
     
     /// Show Claude integration
     @State private var showClaudeIntegration = false
+    
+    /// Show auto-permission settings
+    @State private var showAutoPermission = false
     
     public var body: some View {
         VStack(spacing: 0) {
@@ -434,6 +464,10 @@ public struct TerminalView: View {
         .sheet(isPresented: $showClaudeIntegration) {
             ClaudeIntegrationView(integration: claudeIntegration)
                 .frame(minWidth: 800, minHeight: 600)
+        }
+        .sheet(isPresented: $showAutoPermission) {
+            AutoPermissionView(autoPermission: autoPermissionSystem)
+                .frame(minWidth: 700, minHeight: 500)
         }
     }
     
@@ -469,6 +503,18 @@ public struct TerminalView: View {
             }
             .buttonStyle(.plain)
             .help("Claude Code Integration")
+            
+            // Auto-permission system
+            Button(action: { showAutoPermission.toggle() }) {
+                Image(systemName: "lock.shield")
+                    .foregroundStyle(
+                        autoPermissionSystem.isActive ?
+                        LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing) :
+                        LinearGradient(colors: [Color.white.opacity(0.8)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    )
+            }
+            .buttonStyle(.plain)
+            .help("Auto-Permission System")
             
             // Command palette
             Button(action: { viewModel.showCommandPalette.toggle() }) {
@@ -702,6 +748,13 @@ public class TerminalSession: ObservableObject, Identifiable {
         
         let commandData = (command + "\n").data(using: .utf8)!
         inputPipe.fileHandleForWriting.write(commandData)
+    }
+    
+    /// Display output directly to the terminal
+    public func displayOutput(_ output: String) async {
+        await MainActor.run {
+            buffer.append(output)
+        }
     }
     
     /// Close the session

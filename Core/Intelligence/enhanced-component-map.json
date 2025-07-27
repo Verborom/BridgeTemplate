@@ -26,6 +26,17 @@
           "hotSwappable": true,
           "version": "1.0.0",
           "description": "Automated onboarding and session management for Claude Code"
+        },
+        "autoPermission": {
+          "identifier": "module.terminal.autoPermission",
+          "displayName": "Auto-Permission System",
+          "level": "feature",
+          "buildScope": "feature",
+          "files": ["Modules/Terminal/Sources/AutoPermission/"],
+          "buildTime": 90,
+          "hotSwappable": true,
+          "version": "1.0.0",
+          "description": "Secure unattended execution with automatic permission handling"
         }
       }
     },
