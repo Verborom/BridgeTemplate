@@ -1,532 +1,725 @@
-# CHUNK 2: CREATE UNIVERSAL TEMPLATE
+# CHUNK 3: BUILD TEMPLATE INSTANTIATION SYSTEM
 
 ## CLAUDE CODE PROMPT
 Your ROLE is Claude Code. You are working on the Bridge Template project at /Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate/ on the "architectural-rebuild" branch.
 
-OBJECTIVE: Create the revolutionary UniversalTemplate that will be used for ALL hierarchy levels (Module, Submodule, Epic, Story, Feature, Task, etc.). This template contains complete CICD automation, Swift package structure, versioning, testing, and documentation - identical for every component at every level.
+OBJECTIVE: Build the runtime template instantiation system that enables the app to create new components at any hierarchy level when users click "New Epic", "New Feature", etc. This system copies the UniversalTemplate, customizes it for the specific component type, and integrates it into the proper location in the git structure.
 
-This template will enable runtime instantiation anywhere in the hierarchy when users click "New Epic", "New Feature", etc. in the app.
+This is the core engine that enables dynamic component creation and the infinite nesting architecture.
 
 Use the granular build system and follow professional git workflow with comprehensive Swift DocC documentation.
 
 ## DETAILED REQUEST
 
 ### OBJECTIVE
-Create a complete, production-ready UniversalTemplate that serves as the foundation for all components at every hierarchy level in the new dynamic architecture.
+Create the intelligent template instantiation system that enables runtime creation of new components at any hierarchy level using the UniversalTemplate.
 
 ### CRITICAL CONTEXT
-This template will be copied/instantiated for Modules, Submodules, Epics, Stories, Features, Tasks, etc. Must have complete CICD automation identical to main BridgeTemplate repo Must be universally applicable across ALL hierarchy levels Must support runtime instantiation and customization Real Terminal module (v1.3.0) exists and should be used as reference All future components use this single template for consistency
+Users will click "New Epic", "New Feature", etc. in the app UI System must copy UniversalTemplate to correct location in hierarchy Must customize template with proper names, types, and identifiers Must initialize git repository with CICD for new component Foundation for entire dynamic architecture depends on this system UniversalTemplate from Chunk 2 provides the source template Real Terminal module (v1.3.0) exists as reference implementation All instantiated components get full CICD automation instantly
 
 ### TECHNICAL SPECIFICATION
 
-### 1. CREATE UNIVERSAL TEMPLATE DIRECTORY
-**Location**: `Templates/UniversalTemplate/`
-
-Create complete template structure:
-```
-Templates/UniversalTemplate/
-├── .github/
-│   └── workflows/
-│       ├── ci-cd.yml              # Complete CICD pipeline
-│       ├── documentation.yml      # Auto-documentation
-│       ├── testing.yml           # Automated testing
-│       └── release.yml           # Release automation
-├── Sources/
-│   ├── UniversalComponent.swift   # Main component class
-│   ├── ComponentTypes.swift       # Type definitions
-│   └── ComponentManager.swift     # Lifecycle management
-├── Tests/
-│   ├── UniversalComponentTests.swift
-│   └── ComponentManagerTests.swift
-├── Documentation/
-│   └── UniversalTemplate.md       # Usage guide
-├── Package.swift                  # Swift package manifest
-├── version.json                   # Version management
-├── README.md                      # Auto-generated description
-└── .gitignore                     # Standard ignores
-```
-
-### 2. UNIVERSAL COMPONENT IMPLEMENTATION
-**File**: `Templates/UniversalTemplate/Sources/UniversalComponent.swift`
+### 1. TEMPLATE INSTANTIATION ENGINE
+**File**: `Core/TemplateEngine/TemplateInstantiator.swift`
 
 ```swift
-/// # UniversalComponent
+/// # TemplateInstantiator
 /// 
-/// The foundational component class that can represent any hierarchy level
-/// in the Bridge Template system. This component supports hot-swapping,
-/// independent versioning, and infinite nesting capabilities.
+/// The core engine responsible for runtime instantiation of the UniversalTemplate
+/// at any hierarchy level. This system enables users to create new components
+/// dynamically by copying and customizing the template.
 /// 
 /// ## Overview
 /// 
-/// UniversalComponent serves as the base for all components across every
-/// hierarchy level: Module, Submodule, Epic, Story, Feature, Task, etc.
-/// Each component maintains its own version, lifecycle, and can contain
-/// child components for infinite nesting.
+/// The TemplateInstantiator handles the complete lifecycle of component creation:
+/// - Copies UniversalTemplate to target location
+/// - Customizes identifiers, names, and metadata
+/// - Initializes Git repository with CICD workflows
+/// - Registers component in the hierarchy
+/// - Triggers initial build and documentation generation
 /// 
 /// ## Topics
 /// 
-/// ### Component Identity
-/// - ``identifier``
-/// - ``displayName`` 
-/// - ``componentType``
-/// - ``version``
+/// ### Core Operations
+/// - ``instantiateComponent(_:at:)``
+/// - ``customizeTemplate(_:with:)``
+/// - ``initializeGitRepository(_:)``
+/// - ``registerComponent(_:)``
 /// 
-/// ### Hierarchy Management
-/// - ``children``
-/// - ``parent``
-/// - ``addChild(_:)``
-/// - ``removeChild(_:)``
-/// 
-/// ### Lifecycle
-/// - ``initialize()``
-/// - ``cleanup()``
-/// - ``canUnload()``
+/// ### Template Management
+/// - ``validateTargetPath(_:)``
+/// - ``copyTemplate(from:to:)``
+/// - ``updateManifests(_:)``
 /// 
 /// ## Usage
 /// ```swift
-/// let epic = UniversalComponent(
-///     identifier: "com.bridge.projects.epic-1",
-///     type: .epic,
-///     displayName: "User Dashboard Redesign"
+/// let instantiator = TemplateInstantiator()
+/// let request = ComponentCreationRequest(
+///     name: "UserAuthentication",
+///     parentPath: "Modules/Security",
+///     description: "User login and authentication system"
 /// )
+/// try await instantiator.instantiateComponent(request)
 /// ```
+import Foundation
 import SwiftUI
 
-public class UniversalComponent: ObservableObject, Identifiable {
-    /// Unique identifier for this component
-    public let identifier: String
+public class TemplateInstantiator: ObservableObject {
     
-    /// Version of this component
-    public let version: String
+    /// Base path to UniversalTemplate
+    private let templatePath = "Templates/UniversalTemplate"
     
-    /// Type of component (Module, Epic, Story, etc.)
-    public let type: ComponentType
+    /// Base path for component creation
+    private let basePath = "/Users/eatatjoes/Desktop/ORGANIZE!/BridgeTemplate"
     
-    /// Human-readable display name
-    public let displayName: String
+    /// Git integration helper
+    private let gitManager = GitManager()
     
-    /// Detailed description
-    public let description: String
+    /// File system operations helper
+    private let fileManager = FileManager.default
     
-    /// Child components for infinite nesting
-    @Published public private(set) var children: [UniversalComponent] = []
+    /// Component registry for tracking
+    private let componentRegistry = ComponentRegistry.shared
     
-    /// Parent component reference
-    public weak var parent: UniversalComponent?
+    /// Current instantiation progress
+    @Published public var progress: InstantiationProgress = .idle
     
-    /// Initialize a new universal component
-    public init(
-        identifier: String,
-        version: String = "1.0.0",
-        type: ComponentType,
-        displayName: String,
-        description: String = ""
-    ) {
-        self.identifier = identifier
-        self.version = version
-        self.type = type
-        self.displayName = displayName
-        self.description = description
+    /// Initialize the template instantiator
+    public init() {
+        setupInstantiator()
     }
     
-    /// Initialize component resources
-    public func initialize() async throws {
-        // Load any required resources
-        // Set up child component discovery
-        await discoverChildren()
+    /// Create a new component from the UniversalTemplate
+    /// 
+    /// This is the main entry point for component creation. It handles the
+    /// complete process from template copying to Git initialization.
+    /// 
+    /// - Parameter request: Details for the component to create
+    /// - Returns: Information about the created component
+    /// - Throws: InstantiationError if creation fails
+    public func instantiateComponent(_ request: ComponentCreationRequest) async throws -> ComponentInfo {
+        print("🏗️ Starting component instantiation: \(request.name)")
+        
+        // Validate the request
+        try validateCreationRequest(request)
+        
+        // Determine target path
+        let targetPath = try buildTargetPath(for: request)
+        
+        // Validate target location
+        try validateTargetPath(targetPath)
+        
+        // Copy template to target location
+        progress = .copyingTemplate
+        try await copyTemplate(to: targetPath)
+        
+        // Customize the copied template
+        progress = .customizingTemplate
+        try await customizeTemplate(at: targetPath, with: request)
+        
+        // Initialize Git repository
+        progress = .initializingGit
+        try await initializeGitRepository(at: targetPath)
+        
+        // Register component in hierarchy
+        progress = .registeringComponent
+        let componentInfo = try await registerComponent(at: targetPath, request: request)
+        
+        // Trigger initial build
+        progress = .building
+        try await triggerInitialBuild(at: targetPath)
+        
+        progress = .complete
+        print("✅ Component instantiation complete: \(componentInfo.identifier)")
+        
+        return componentInfo
     }
     
-    /// Clean up resources before unloading
-    public func cleanup() async throws {
-        // Clean up children first
-        for child in children {
-            try await child.cleanup()
+    /// Copy UniversalTemplate to target location
+    /// 
+    /// Performs deep copy of entire template directory structure
+    /// while preserving file permissions and structure.
+    /// 
+    /// - Parameter targetPath: Destination path for template copy
+    /// - Throws: InstantiationError.templateCopyFailed if copy fails
+    private func copyTemplate(to targetPath: String) async throws {
+        let sourceURL = URL(fileURLWithPath: "\(basePath)/\(templatePath)")
+        let targetURL = URL(fileURLWithPath: targetPath)
+        
+        do {
+            // Create parent directories if needed
+            try fileManager.createDirectory(
+                at: targetURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            
+            // Deep copy template directory
+            try fileManager.copyItem(at: sourceURL, to: targetURL)
+            
+            print("📁 Template copied to: \(targetPath)")
+        } catch {
+            throw InstantiationError.templateCopyFailed("Failed to copy template: \(error)")
         }
-        children.removeAll()
     }
     
-    /// Check if component can be safely unloaded
-    public func canUnload() -> Bool {
-        // Check if any children prevent unloading
-        return children.allSatisfy { $0.canUnload() }
+    /// Customize the copied template with component-specific details
+    /// 
+    /// Updates all template files with the actual component information:
+    /// - Package.swift with correct name
+    /// - version.json with component metadata
+    /// - README.md with description
+    /// - Source files with proper identifiers
+    /// 
+    /// - Parameters:
+    ///   - targetPath: Path to the copied template
+    ///   - request: Component creation details
+    /// - Throws: InstantiationError.customizationFailed if customization fails
+    private func customizeTemplate(at targetPath: String, with request: ComponentCreationRequest) async throws {
+        do {
+            // Update Package.swift
+            try await updatePackageManifest(at: targetPath, with: request)
+            
+            // Update version.json
+            try await updateVersionFile(at: targetPath, with: request)
+            
+            // Update README.md
+            try await updateReadme(at: targetPath, with: request)
+            
+            // Update source files
+            try await updateSourceFiles(at: targetPath, with: request)
+            
+            // Update CICD workflows
+            try await updateCICDWorkflows(at: targetPath, with: request)
+            
+            print("⚙️ Template customized for: \(request.name)")
+        } catch {
+            throw InstantiationError.customizationFailed("Failed to customize template: \(error)")
+        }
     }
     
-    /// Add a child component
-    public func addChild(_ child: UniversalComponent) {
-        child.parent = self
-        children.append(child)
+    /// Initialize Git repository with CICD workflows
+    /// 
+    /// Sets up a complete Git repository with:
+    /// - Initial commit with all template files
+    /// - Proper .gitignore configuration
+    /// - GitHub Actions workflows enabled
+    /// - Remote origin if specified
+    /// 
+    /// - Parameter targetPath: Path to initialize repository
+    /// - Throws: InstantiationError.gitInitializationFailed if Git setup fails
+    private func initializeGitRepository(at targetPath: String) async throws {
+        do {
+            // Initialize Git repository
+            try await gitManager.initializeRepository(at: targetPath)
+            
+            // Add all files to Git
+            try await gitManager.addAllFiles(at: targetPath)
+            
+            // Create initial commit
+            let commitMessage = """
+            Initial component creation from UniversalTemplate
+            
+            Component: \(extractComponentName(from: targetPath))
+            Created: \(Date().ISO8601Format())
+            Template Version: 1.0.0
+            
+            Features:
+            - Complete CICD automation
+            - Swift DocC documentation
+            - Automated testing
+            - Version management
+            - Hot-swapping support
+            
+            🤖 Generated by Bridge Template Instantiator
+            """
+            
+            try await gitManager.createCommit(at: targetPath, message: commitMessage)
+            
+            print("🔄 Git repository initialized at: \(targetPath)")
+        } catch {
+            throw InstantiationError.gitInitializationFailed("Failed to initialize Git: \(error)")
+        }
     }
     
-    /// Remove a child component
-    public func removeChild(_ child: UniversalComponent) {
-        child.parent = nil
-        children.removeAll { $0.identifier == child.identifier }
+    /// Register the component in the global component registry
+    /// 
+    /// Adds the new component to the system registry for:
+    /// - Hierarchy tracking
+    /// - Dependency management
+    /// - Hot-swapping coordination
+    /// - Build system integration
+    /// 
+    /// - Parameters:
+    ///   - targetPath: Path to the component
+    ///   - request: Original creation request
+    /// - Returns: ComponentInfo for the registered component
+    /// - Throws: InstantiationError.registrationFailed if registration fails
+    private func registerComponent(at targetPath: String, request: ComponentCreationRequest) async throws -> ComponentInfo {
+        let componentInfo = ComponentInfo(
+            identifier: buildComponentIdentifier(for: request),
+            name: request.name,
+            path: targetPath,
+            parentPath: request.parentPath,
+            version: "1.0.0",
+            createdDate: Date(),
+            description: request.description
+        )
+        
+        try await componentRegistry.register(componentInfo)
+        
+        print("📋 Component registered: \(componentInfo.identifier)")
+        return componentInfo
     }
     
-    /// Discover and load child components
-    private func discoverChildren() async {
-        // Implementation for discovering child components
-        // This will be customized based on component type
+    /// Trigger initial build and documentation generation
+    /// 
+    /// Starts the automated build process for the new component:
+    /// - Swift package build
+    /// - Test execution
+    /// - Documentation generation
+    /// - CICD workflow validation
+    /// 
+    /// - Parameter targetPath: Path to build
+    /// - Throws: InstantiationError.buildFailed if initial build fails
+    private func triggerInitialBuild(at targetPath: String) async throws {
+        do {
+            // Run Swift build
+            try await executeShellCommand("swift build", at: targetPath)
+            
+            // Run tests
+            try await executeShellCommand("swift test", at: targetPath)
+            
+            // Generate documentation
+            try await executeShellCommand("swift package generate-documentation", at: targetPath)
+            
+            print("🔨 Initial build completed successfully")
+        } catch {
+            // Don't fail instantiation for build issues - log and continue
+            print("⚠️ Initial build had issues: \(error)")
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    /// Validate component creation request
+    private func validateCreationRequest(_ request: ComponentCreationRequest) throws {
+        guard !request.name.isEmpty else {
+            throw InstantiationError.invalidRequest("Component name cannot be empty")
+        }
+        
+        guard request.name.range(of: "^[a-zA-Z][a-zA-Z0-9_]*$", options: .regularExpression) != nil else {
+            throw InstantiationError.invalidRequest("Component name must be valid identifier")
+        }
+    }
+    
+    /// Build target path for component
+    private func buildTargetPath(for request: ComponentCreationRequest) throws -> String {
+        let parentPath = request.parentPath.isEmpty ? "Modules" : request.parentPath
+        return "\(basePath)/\(parentPath)/\(request.name)"
+    }
+    
+    /// Validate target path doesn't already exist
+    private func validateTargetPath(_ path: String) throws {
+        if fileManager.fileExists(atPath: path) {
+            throw InstantiationError.targetPathExists("Component already exists at: \(path)")
+        }
+    }
+    
+    /// Extract component name from path
+    private func extractComponentName(from path: String) -> String {
+        return URL(fileURLWithPath: path).lastPathComponent
+    }
+    
+    /// Build component identifier
+    private func buildComponentIdentifier(for request: ComponentCreationRequest) -> String {
+        let parentId = request.parentPath.replacingOccurrences(of: "/", with: ".")
+        return "com.bridge.\(parentId).\(request.name)".lowercased()
+    }
+    
+    /// Setup instantiator
+    private func setupInstantiator() {
+        // Initialize any required state
     }
 }
 ```
 
-### 3. COMPONENT TYPE DEFINITIONS
-**File**: `Templates/UniversalTemplate/Sources/ComponentTypes.swift`
+### 2. COMPONENT CREATION REQUEST
+**File**: `Core/TemplateEngine/ComponentCreationRequest.swift`
 
 ```swift
-/// # ComponentType
+/// # ComponentCreationRequest
 /// 
-/// Enumeration of all possible component types in the Bridge Template
-/// hierarchy system. Each type represents a different level of granularity
-/// from Module (largest) down to Property (smallest).
+/// Represents a request to create a new component from the UniversalTemplate.
+/// Contains all necessary information for template instantiation and customization.
 /// 
 /// ## Overview
 /// 
-/// The hierarchy follows standard software project management practices:
-/// - Module: Top-level functionality (Terminal, Projects, Dashboard)
-/// - Submodule: Major sections within modules
-/// - Epic: Large initiatives spanning multiple stories
-/// - Story: User-facing functionality 
-/// - Feature: Specific functionality to implement
-/// - Task: Development work items
-/// - Widget: UI components
-/// - Property: Individual values or settings
+/// This structure encapsulates the user's intent to create a new component,
+/// including where it should be placed in the hierarchy, what it should be
+/// called, and how it should be configured.
 /// 
 /// ## Topics
 /// 
-/// ### Hierarchy Levels
-/// - ``module``
-/// - ``submodule``
-/// - ``epic``
-/// - ``story``
-/// - ``feature``
-/// - ``task``
-/// - ``widget``
-/// - ``property``
-public enum ComponentType: String, CaseIterable, Codable {
-    case module = "module"
-    case submodule = "submodule" 
-    case epic = "epic"
-    case story = "story"
-    case feature = "feature"
-    case task = "task"
-    case widget = "widget"
-    case property = "property"
+/// ### Request Properties
+/// - ``name``
+/// - ``parentPath``
+/// - ``description``
+/// - ``metadata``
+/// 
+/// ### Validation
+/// - ``validate()``
+/// - ``isValid``
+/// 
+/// ## Usage
+/// ```swift
+/// let request = ComponentCreationRequest(
+///     name: "AuthenticationService",
+///     parentPath: "Modules/Security",
+///     description: "Handles user authentication and authorization"
+/// )
+/// ```
+public struct ComponentCreationRequest: Codable {
     
-    /// Display name for UI
-    public var displayName: String {
+    /// Name of the component to create
+    /// 
+    /// Must be a valid Swift identifier that will be used for:
+    /// - Directory name
+    /// - Package name
+    /// - Class names in generated code
+    public let name: String
+    
+    /// Parent path where component should be created
+    /// 
+    /// Relative to project root. Examples:
+    /// - "Modules" for top-level modules
+    /// - "Modules/Terminal" for Terminal sub-components
+    /// - "Modules/Projects/UserStories" for deeper nesting
+    public let parentPath: String
+    
+    /// Human-readable description of the component
+    /// 
+    /// Used in documentation, README files, and metadata.
+    /// Should explain the component's purpose and functionality.
+    public let description: String
+    
+    /// Additional metadata for component creation
+    /// 
+    /// Optional key-value pairs for advanced customization:
+    /// - Author information
+    /// - License details
+    /// - Custom template variables
+    public let metadata: [String: String]
+    
+    /// Initialize a new component creation request
+    /// 
+    /// - Parameters:
+    ///   - name: Component name (must be valid identifier)
+    ///   - parentPath: Where to create the component
+    ///   - description: Human-readable description
+    ///   - metadata: Optional additional metadata
+    public init(
+        name: String,
+        parentPath: String = "Modules",
+        description: String = "",
+        metadata: [String: String] = [:]
+    ) {
+        self.name = name
+        self.parentPath = parentPath
+        self.description = description
+        self.metadata = metadata
+    }
+    
+    /// Validate the creation request
+    /// 
+    /// Checks that all required fields are valid and the request
+    /// can be safely processed by the instantiation system.
+    /// 
+    /// - Returns: true if request is valid
+    public func validate() -> Bool {
+        // Name validation
+        guard !name.isEmpty else { return false }
+        guard name.range(of: "^[a-zA-Z][a-zA-Z0-9_]*$", options: .regularExpression) != nil else {
+            return false
+        }
+        
+        // Path validation
+        guard !parentPath.contains("..") else { return false }
+        guard !parentPath.hasPrefix("/") else { return false }
+        
+        return true
+    }
+    
+    /// Check if request is valid
+    public var isValid: Bool {
+        return validate()
+    }
+}
+```
+
+### 3. INSTANTIATION PROGRESS TRACKING
+**File**: `Core/TemplateEngine/InstantiationProgress.swift`
+
+```swift
+/// # InstantiationProgress
+/// 
+/// Tracks the progress of template instantiation operations.
+/// Provides real-time feedback for UI and logging systems.
+/// 
+/// ## Overview
+/// 
+/// The instantiation process involves multiple steps that can take
+/// several seconds to complete. This enum provides detailed progress
+/// tracking for user feedback and debugging.
+/// 
+/// ## Topics
+/// 
+/// ### Progress States
+/// - ``idle``
+/// - ``copyingTemplate``
+/// - ``customizingTemplate``
+/// - ``initializingGit``
+/// - ``registeringComponent``
+/// - ``building``
+/// - ``complete``
+/// - ``failed(_:)``
+public enum InstantiationProgress: Equatable {
+    case idle
+    case copyingTemplate
+    case customizingTemplate
+    case initializingGit
+    case registeringComponent
+    case building
+    case complete
+    case failed(String)
+    
+    /// Human-readable description of current progress
+    public var description: String {
         switch self {
-        case .module: return "Module"
-        case .submodule: return "Submodule"
-        case .epic: return "Epic"
-        case .story: return "Story"
-        case .feature: return "Feature"
-        case .task: return "Task"
-        case .widget: return "Widget"
-        case .property: return "Property"
+        case .idle:
+            return "Ready to create component"
+        case .copyingTemplate:
+            return "Copying UniversalTemplate..."
+        case .customizingTemplate:
+            return "Customizing template for component..."
+        case .initializingGit:
+            return "Setting up Git repository..."
+        case .registeringComponent:
+            return "Registering component in hierarchy..."
+        case .building:
+            return "Running initial build and tests..."
+        case .complete:
+            return "Component created successfully!"
+        case .failed(let error):
+            return "Creation failed: \(error)"
         }
     }
     
-    /// Typical build time for this component type
-    public var buildTime: TimeInterval {
+    /// Progress percentage (0.0 to 1.0)
+    public var percentage: Double {
         switch self {
-        case .property: return 15  // 15 seconds
-        case .widget: return 30    // 30 seconds
-        case .task: return 45      // 45 seconds
-        case .feature: return 90   // 90 seconds
-        case .story: return 120    // 2 minutes
-        case .epic: return 150     // 2.5 minutes
-        case .submodule: return 180 // 3 minutes
-        case .module: return 240   // 4 minutes
-        }
-    }
-    
-    /// Child component types that can be contained
-    public var allowedChildTypes: [ComponentType] {
-        switch self {
-        case .module: return [.submodule]
-        case .submodule: return [.epic]
-        case .epic: return [.story]
-        case .story: return [.feature]
-        case .feature: return [.task]
-        case .task: return [.widget]
-        case .widget: return [.property]
-        case .property: return [] // Leaf node
+        case .idle: return 0.0
+        case .copyingTemplate: return 0.2
+        case .customizingTemplate: return 0.4
+        case .initializingGit: return 0.6
+        case .registeringComponent: return 0.8
+        case .building: return 0.9
+        case .complete: return 1.0
+        case .failed: return 0.0
         }
     }
 }
 ```
 
-### 4. COMPLETE CICD WORKFLOW
-**File**: `Templates/UniversalTemplate/.github/workflows/ci-cd.yml`
-
-```yaml
-name: Universal Component CI/CD
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-
-env:
-  COMPONENT_NAME: ${{ github.event.repository.name }}
-
-jobs:
-  test:
-    name: Test Component
-    runs-on: macos-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: "5.9"
-    
-    - name: Cache Swift packages
-      uses: actions/cache@v3
-      with:
-        path: .build
-        key: ${{ runner.os }}-swift-${{ hashFiles('Package.swift') }}
-    
-    - name: Build component
-      run: swift build -c release
-    
-    - name: Run tests
-      run: swift test --enable-code-coverage
-    
-    - name: Generate coverage report
-      run: |
-        xcrun llvm-cov export .build/debug/*.xctest/Contents/MacOS/* \
-          -instr-profile .build/debug/codecov/default.profdata \
-          -format="lcov" > coverage.lcov
-
-  documentation:
-    name: Generate Documentation
-    runs-on: macos-latest
-    needs: test
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Setup Swift
-      uses: swift-actions/setup-swift@v1
-      with:
-        swift-version: "5.9"
-    
-    - name: Generate DocC documentation
-      run: |
-        swift package generate-documentation \
-          --target UniversalComponent \
-          --output-path ./docs
-    
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./docs
-
-  release:
-    name: Create Release
-    runs-on: macos-latest
-    needs: [test, documentation]
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[release]')
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Read version
-      id: version
-      run: |
-        VERSION=$(cat version.json | jq -r '.version')
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-    
-    - name: Create release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: v${{ steps.version.outputs.version }}
-        release_name: Release v${{ steps.version.outputs.version }}
-        draft: false
-        prerelease: false
-```
-
-### 5. PACKAGE MANIFEST
-**File**: `Templates/UniversalTemplate/Package.swift`
+### 4. INSTANTIATION ERRORS
+**File**: `Core/TemplateEngine/InstantiationError.swift`
 
 ```swift
-// swift-tools-version: 5.9
-import PackageDescription
-
-let package = Package(
-    name: "UniversalComponent",
-    platforms: [
-        .macOS(.v14),
-        .iOS(.v17)
-    ],
-    products: [
-        .library(
-            name: "UniversalComponent",
-            targets: ["UniversalComponent"]),
-    ],
-    dependencies: [
-        // Add dependencies as needed
-    ],
-    targets: [
-        .target(
-            name: "UniversalComponent",
-            dependencies: [],
-            path: "Sources"
-        ),
-        .testTarget(
-            name: "UniversalComponentTests",
-            dependencies: ["UniversalComponent"],
-            path: "Tests"
-        ),
-    ]
-)
-```
-
-### 6. VERSION MANAGEMENT
-**File**: `Templates/UniversalTemplate/version.json`
-
-```json
-{
-  "version": "1.0.0",
-  "buildDate": "2025-07-27T00:00:00Z",
-  "componentType": "template",
-  "changelog": {
-    "1.0.0": {
-      "date": "2025-07-27",
-      "changes": [
-        "Initial UniversalTemplate implementation",
-        "Support for all hierarchy levels",
-        "Complete CICD automation",
-        "Swift DocC documentation integration",
-        "Automated testing and release workflows"
-      ]
+/// # Instantiation Errors
+/// 
+/// Error types for template instantiation system.
+/// Provides detailed error information for debugging and user feedback.
+/// 
+/// ## Overview
+/// Comprehensive error handling for all template instantiation operations
+/// including file system operations, git integration, and validation.
+/// 
+/// ## Error Categories
+/// - File system errors
+/// - Git operation errors
+/// - Validation errors
+/// - Template customization errors
+/// 
+/// ## Version History
+/// - v1.0.0: Initial error handling system
+public enum InstantiationError: Error, LocalizedError {
+    case templateNotFound(String)
+    case targetPathExists(String)
+    case missingRequiredFile(String)
+    case gitOperationFailed(String)
+    case customizationFailed(String)
+    case validationFailed(String)
+    case fileSystemError(String)
+    case invalidRequest(String)
+    case templateCopyFailed(String)
+    case gitInitializationFailed(String)
+    case registrationFailed(String)
+    case buildFailed(String)
+    
+    public var errorDescription: String? {
+        switch self {
+        case .templateNotFound(let path):
+            return "UniversalTemplate not found at path: \(path)"
+        case .targetPathExists(let path):
+            return "Target path already exists: \(path)"
+        case .missingRequiredFile(let file):
+            return "Required file missing: \(file)"
+        case .gitOperationFailed(let operation):
+            return "Git operation failed: \(operation)"
+        case .customizationFailed(let reason):
+            return "Template customization failed: \(reason)"
+        case .validationFailed(let reason):
+            return "Component validation failed: \(reason)"
+        case .fileSystemError(let reason):
+            return "File system error: \(reason)"
+        case .invalidRequest(let reason):
+            return "Invalid creation request: \(reason)"
+        case .templateCopyFailed(let reason):
+            return "Failed to copy template: \(reason)"
+        case .gitInitializationFailed(let reason):
+            return "Failed to initialize Git repository: \(reason)"
+        case .registrationFailed(let reason):
+            return "Failed to register component: \(reason)"
+        case .buildFailed(let reason):
+            return "Initial build failed: \(reason)"
+        }
     }
-  },
-  "compatibility": {
-    "minBridgeVersion": "2.0.0",
-    "maxBridgeVersion": null
-  }
 }
 ```
 
-### 7. COMPREHENSIVE TEST SUITE
-**File**: `Templates/UniversalTemplate/Tests/UniversalComponentTests.swift`
+### 5. GIT MANAGEMENT INTEGRATION
+**File**: `Core/TemplateEngine/GitManager.swift`
 
 ```swift
-import XCTest
-@testable import UniversalComponent
-
-/// # Universal Component Tests
+/// # GitManager
 /// 
-/// Comprehensive test suite for universal component functionality.
-/// Tests all aspects of component lifecycle and behavior.
+/// Handles Git operations for template instantiation.
+/// Provides clean interface for repository initialization and management.
 /// 
-/// ## Test Coverage
-/// - Component initialization
-/// - Child loading and management
-/// - Version management
-/// - Cleanup procedures
-/// - Protocol compliance
-final class UniversalComponentTests: XCTestCase {
+/// ## Overview
+/// 
+/// Manages all Git-related operations during component creation:
+/// - Repository initialization
+/// - File staging and commits
+/// - Remote configuration
+/// - Branch management
+/// 
+/// ## Topics
+/// 
+/// ### Repository Operations
+/// - ``initializeRepository(at:)``
+/// - ``addAllFiles(at:)``
+/// - ``createCommit(at:message:)``
+/// 
+/// ### Utility Operations
+/// - ``isGitRepository(_:)``
+/// - ``getRepositoryStatus(_:)``
+public class GitManager {
     
-    /// Test basic component creation and properties
-    func testComponentCreation() async throws {
-        let component = UniversalComponent(
-            identifier: "com.bridge.test.component",
-            version: "1.0.0",
-            type: .feature,
-            displayName: "Test Component",
-            description: "Test component for unit testing"
-        )
-        
-        XCTAssertEqual(component.identifier, "com.bridge.test.component")
-        XCTAssertEqual(component.version, "1.0.0")
-        XCTAssertEqual(component.type, .feature)
-        XCTAssertEqual(component.displayName, "Test Component")
-        XCTAssertEqual(component.description, "Test component for unit testing")
+    /// Initialize a new Git repository
+    /// 
+    /// Creates a new Git repository with proper configuration
+    /// for Bridge Template components.
+    /// 
+    /// - Parameter path: Path where to initialize repository
+    /// - Throws: InstantiationError.gitInitializationFailed if initialization fails
+    public func initializeRepository(at path: String) async throws {
+        try await executeGitCommand("init", at: path)
     }
     
-    /// Test component initialization
-    func testComponentInitialization() async throws {
-        let component = UniversalComponent(
-            identifier: "com.bridge.test.init",
-            type: .story,
-            displayName: "Initialization Test"
-        )
-        
-        try await component.initialize()
-        
-        let children = await component.children
-        XCTAssertNotNil(children)
+    /// Add all files to Git staging
+    /// 
+    /// Stages all files in the component directory for commit.
+    /// 
+    /// - Parameter path: Repository path
+    /// - Throws: InstantiationError.gitOperationFailed if staging fails
+    public func addAllFiles(at path: String) async throws {
+        try await executeGitCommand("add .", at: path)
     }
     
-    /// Test component cleanup
-    func testComponentCleanup() async throws {
-        let component = UniversalComponent(
-            identifier: "com.bridge.test.cleanup",
-            type: .task,
-            displayName: "Cleanup Test"
-        )
-        
-        try await component.initialize()
-        try await component.cleanup()
-        
-        let children = await component.children
-        XCTAssertEqual(children.count, 0)
+    /// Create commit with message
+    /// 
+    /// Creates a new commit with the provided message.
+    /// 
+    /// - Parameters:
+    ///   - path: Repository path
+    ///   - message: Commit message
+    /// - Throws: InstantiationError.gitOperationFailed if commit fails
+    public func createCommit(at path: String, message: String) async throws {
+        let escapedMessage = message.replacingOccurrences(of: "\"", with: "\\\"")
+        try await executeGitCommand("commit -m \"\(escapedMessage)\"", at: path)
     }
     
-    /// Test component type enumeration
-    func testComponentTypes() {
-        let allTypes = ComponentType.allCases
+    /// Execute Git command at specified path
+    /// 
+    /// - Parameters:
+    ///   - command: Git command to execute
+    ///   - path: Working directory for command
+    /// - Throws: InstantiationError.gitOperationFailed if command fails
+    private func executeGitCommand(_ command: String, at path: String) async throws {
+        let fullCommand = "cd '\(path)' && git \(command)"
         
-        XCTAssertTrue(allTypes.contains(.module))
-        XCTAssertTrue(allTypes.contains(.submodule))
-        XCTAssertTrue(allTypes.contains(.epic))
-        XCTAssertTrue(allTypes.contains(.story))
-        XCTAssertTrue(allTypes.contains(.feature))
-        XCTAssertTrue(allTypes.contains(.task))
-        XCTAssertTrue(allTypes.contains(.widget))
-        XCTAssertTrue(allTypes.contains(.property))
+        let process = Process()
+        process.launchPath = "/bin/bash"
+        process.arguments = ["-c", fullCommand]
+        
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            if process.terminationStatus != 0 {
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                let output = String(data: data, encoding: .utf8) ?? "Unknown error"
+                throw InstantiationError.gitOperationFailed("Command '\(command)' failed: \(output)")
+            }
+        } catch {
+            throw InstantiationError.gitOperationFailed("Failed to execute git command: \(error)")
+        }
     }
 }
 ```
 
 ### BUILD SCOPE
 - Target Level: Feature-level (90 seconds)
-- Affected Components: New UniversalTemplate system
-- Build Time: ~90 seconds (Feature-level)
-- Integration: Foundation for all future components
+- Affected Components: New template instantiation system
+- Integration: Core system for dynamic component creation
+- Dependencies: UniversalTemplate from Chunk 2
 
 ### DOCUMENTATION REQUIREMENTS
 - Ensure comprehensive Swift DocC comments for all public APIs throughout all code
-- Create template usage guide and examples with thorough commenting
-- Document component hierarchy with detailed Swift DocC comments
-- Add inline documentation to support auto-documentation generation
+- Add detailed inline documentation explaining template instantiation process
+- Document Git integration and error handling with thorough Swift DocC comments
+- Create usage examples and troubleshooting guide with proper commenting for auto-documentation
 
 ### SUCCESS CRITERIA
-✅ Complete UniversalTemplate directory structure created
-✅ All Swift files compile successfully with comprehensive Swift DocC comments
-✅ Package.swift template with proper dependencies
-✅ Complete CICD workflows for any component
-✅ Comprehensive test suite passes with documented test cases
-✅ Version management system in place with proper commenting
-✅ Template ready for instantiation anywhere in hierarchy
-✅ Swift DocC auto-documentation generation working from code comments
+✅ Complete template instantiation system implemented with comprehensive Swift DocC comments
+✅ Runtime component creation working from UniversalTemplate
+✅ Git repository initialization and CICD setup automated
+✅ Error handling comprehensive with proper documentation comments
+✅ File system operations robust and well-documented
+✅ Component registration and hierarchy management functional
+✅ All Swift code compiles and tests pass with thorough commenting
+✅ Template customization working for names and identifiers
+✅ Ready for UI integration in future chunks
 
 ### POST-COMPLETION VERIFICATION
-- Build Test: cd Templates/UniversalTemplate && swift build
-- Test Suite: swift test passes all tests
+- Instantiation Test: Create test component using TemplateInstantiator
+- Git Verification: Check that new component has proper Git repository
+- Build Test: Verify instantiated component builds successfully
+- Template Validation: Confirm UniversalTemplate customization works
 - Documentation: Swift DocC comments comprehensive throughout codebase
-- Template Ready: Can be copied and customized for any component type
 
 Execute using granular build system with comprehensive Swift DocC documentation comments throughout all code.
