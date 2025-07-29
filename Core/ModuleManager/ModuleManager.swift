@@ -1,6 +1,5 @@
 import SwiftUI
 import Combine
-import Terminal
 
 /// # ModuleManager
 ///
@@ -85,6 +84,17 @@ public class ModuleManager: ObservableObject {
     /// Cancellables for Combine subscriptions
     private var cancellables = Set<AnyCancellable>()
     
+    /// Dynamic module discovery system
+    ///
+    /// Replaces hardcoded module instantiation with automatic discovery
+    /// from the file system. Maintains hot-swapping and version management.
+    private let moduleDiscovery = ModuleDiscovery()
+    
+    /// Discovered modules cache
+    ///
+    /// Caches discovered module information to avoid repeated file system scans
+    private var discoveredModules: [ModuleDiscovery.DiscoveredModule] = []
+    
     /// Initialize the ModuleManager
     ///
     /// Sets up the module system and discovers available modules.
@@ -95,6 +105,20 @@ public class ModuleManager: ObservableObject {
     /// Discover and prepare available modules
     public func discoverAndLoadModules() async {
         await discoverAvailableModules()
+        
+        // Actually load the discovered modules
+        print("📦 Loading \(availableModules.count) discovered modules...")
+        
+        for module in availableModules {
+            do {
+                _ = try await loadModule(identifier: module.identifier)
+                print("✅ Successfully loaded: \(module.name)")
+            } catch {
+                print("❌ Failed to load module \(module.identifier): \(error)")
+            }
+        }
+        
+        print("🎉 Module loading complete: \(loadedModules.count) modules loaded")
     }
     
     /// Load a module into the system
@@ -323,38 +347,39 @@ public class ModuleManager: ObservableObject {
     // MARK: - Private Methods
     
     /// Discover available modules in the system
+    ///
+    /// Uses the dynamic ModuleDiscovery system to automatically find all modules
+    /// in the Modules directory without hardcoding. This enables true modularity
+    /// where new modules can be added without modifying core code.
     private func discoverAvailableModules() async {
-        // In production, this would scan the Modules directory
-        // For now, we'll hardcode some example modules
-        availableModules = [
-            ModuleMetadata(
-                identifier: "com.bridge.dashboard",
-                name: "Dashboard",
-                versions: ["1.5.0", "1.5.1", "1.5.2", "1.6.0-beta"],
-                dependencies: []
-            ),
-            ModuleMetadata(
-                identifier: "com.bridge.projects",
-                name: "Projects",
-                versions: ["1.8.0", "1.8.1"],
-                dependencies: ["com.bridge.dashboard"]
-            ),
-            ModuleMetadata(
-                identifier: "com.bridge.terminal",
-                name: "Terminal",
-                versions: ["1.3.0"], // Real version with Claude integration and auto-permissions
-                dependencies: [],
-                capabilities: [
-                    "Native macOS Terminal with PTY support",
-                    "Claude Code integration with automated onboarding",
-                    "Auto-permission system with keychain security",
-                    "Multi-session support with tabs and management",
-                    "Full ANSI color and escape sequence support",
-                    "Unattended execution for CI/CD workflows",
-                    "Hot-swappable for runtime updates"
-                ]
-            )
-        ]
+        do {
+            print("🔄 Starting dynamic module discovery...")
+            
+            // Use dynamic discovery to find all modules
+            discoveredModules = await moduleDiscovery.discoverModules()
+            
+            // Convert discovered modules to metadata format
+            availableModules = discoveredModules.map { module in
+                ModuleMetadata(
+                    identifier: module.identifier,
+                    name: module.displayName,
+                    versions: [module.version],
+                    dependencies: module.dependencies,
+                    capabilities: module.capabilities
+                )
+            }
+            
+            print("✅ Dynamic discovery complete: Found \(availableModules.count) modules")
+            
+            // Log discovered modules
+            for module in availableModules {
+                print("  📦 \(module.name) (\(module.identifier)) v\(module.versions.first ?? "1.0.0")")
+            }
+        } catch {
+            print("❌ Module discovery failed: \(error)")
+            // Fallback to empty list rather than hardcoded modules
+            availableModules = []
+        }
     }
     
     /// Find module metadata
@@ -386,19 +411,22 @@ public class ModuleManager: ObservableObject {
     }
     
     /// Create module instance from metadata
+    ///
+    /// Uses dynamic discovery system to instantiate modules without compile-time
+    /// dependencies. This enables true hot-swapping and dynamic module loading.
     private func createModuleInstance(from metadata: ModuleMetadata) async throws -> any BridgeModule {
-        // Real module implementations with Terminal integration complete
-        switch metadata.identifier {
-        case "com.bridge.dashboard":
-            return MockDashboardModule()
-        case "com.bridge.projects":
-            return MockProjectsModule()
-        case "com.bridge.terminal":
-            // Use real Terminal module instead of mock
-            return TerminalModule()
-        default:
-            throw ModuleError.initializationFailed("Unknown module: \(metadata.identifier)")
+        // Find the discovered module matching this metadata
+        guard let discoveredModule = discoveredModules.first(where: { $0.identifier == metadata.identifier }) else {
+            throw ModuleError.initializationFailed("Module not found in discovery: \(metadata.identifier)")
         }
+        
+        print("🏗️ Creating instance of \(discoveredModule.displayName) using dynamic discovery...")
+        
+        // Use dynamic module discovery to create instance
+        let module = try await moduleDiscovery.createModuleInstance(from: discoveredModule)
+        
+        print("✅ Successfully created \(discoveredModule.displayName) module instance")
+        return module
     }
     
     /// Check if any loaded modules depend on the given module

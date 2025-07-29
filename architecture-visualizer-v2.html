@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeTemplate Architecture Deep Dive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            overflow-x: auto;
+        }
+        
+        .container {
+            width: 100%;
+            min-width: 1400px;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+        
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #007aff, #5ac8fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .header p {
+            font-size: 18px;
+            color: #aaa;
+        }
+        
+        /* Main Architecture */
+        .architecture {
+            position: relative;
+            width: 100%;
+            min-height: 800px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            padding: 40px;
+        }
+        
+        /* Components */
+        .component {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .component:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+        }
+        
+        .component h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+        
+        .component p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        /* Component Types */
+        .app-component {
+            border-color: #007aff;
+            background: rgba(0, 122, 255, 0.1);
+        }
+        
+        .core-component {
+            border-color: #34c759;
+            background: rgba(52, 199, 89, 0.1);
+        }
+        
+        .module-component {
+            border-color: #ff9500;
+            background: rgba(255, 149, 0, 0.1);
+        }
+        
+        .broken-component {
+            border-color: #ff3b30;
+            background: rgba(255, 59, 48, 0.1);
+        }
+        
+        .protocol-component {
+            border-color: #af52de;
+            background: rgba(175, 82, 222, 0.1);
+        }
+        
+        /* Connections */
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .connection {
+            fill: none;
+            stroke-width: 3;
+            opacity: 0.7;
+        }
+        
+        .connection-working {
+            stroke: #34c759;
+        }
+        
+        .connection-broken {
+            stroke: #ff3b30;
+            stroke-dasharray: 5, 5;
+        }
+        
+        .connection-partial {
+            stroke: #ff9500;
+            stroke-dasharray: 10, 5;
+        }
+        
+        .connection-attempted {
+            stroke: #007aff;
+            stroke-dasharray: 15, 5;
+        }
+        
+        /* Detail Panel */
+        .detail-panel {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            width: 400px;
+            height: 100vh;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .detail-panel.active {
+            right: 0;
+        }
+        
+        .detail-panel h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .detail-panel .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+        }
+        
+        .detail-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        
+        .detail-section h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #5ac8fa;
+        }
+        
+        .detail-section p, .detail-section li {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+        }
+        
+        .detail-section ul {
+            padding-left: 20px;
+        }
+        
+        .issue-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .issue-list li {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(255, 59, 48, 0.1);
+            border-left: 3px solid #ff3b30;
+            border-radius: 5px;
+        }
+        
+        .success-list li {
+            background: rgba(52, 199, 89, 0.1);
+            border-left-color: #34c759;
+        }
+        
+        /* Legend */
+        .legend {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            border-radius: 15px;
+            z-index: 100;
+        }
+        
+        .legend h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .legend-color {
+            width: 30px;
+            height: 3px;
+            margin-right: 10px;
+        }
+        
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 4px;
+            border: 2px solid;
+        }
+        
+        /* Info boxes */
+        .info-box {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 14px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .info-box h4 {
+            margin-bottom: 8px;
+            color: #5ac8fa;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+        
+        .status-working {
+            background: #34c759;
+            color: white;
+        }
+        
+        .status-broken {
+            background: #ff3b30;
+            color: white;
+        }
+        
+        .status-mock {
+            background: #ff9500;
+            color: white;
+        }
+        
+        /* Scroll hint */
+        .scroll-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BridgeTemplate Architecture Explorer</h1>
+            <p>Click any component to see detailed information • Scroll horizontally to see everything</p>
+        </div>
+        
+        <div class="architecture">
+            <!-- SVG for connections -->
+            <svg id="connections"></svg>
+            
+            <!-- User Interface Layer -->
+            <div class="component app-component" style="left: 600px; top: 20px; width: 250px;" data-id="main-app">
+                <h3>NewBridgeMac App</h3>
+                <p>The main application users interact with</p>
+                <span class="status-badge status-working">Running</span>
+            </div>
+            
+            <!-- Core Systems Layer -->
+            <div class="component core-component" style="left: 550px; top: 140px; width: 350px;" data-id="module-manager">
+                <h3>Module Manager</h3>
+                <p>Central hub that loads, unloads, and manages all modules</p>
+                <span class="status-badge status-working">Working</span>
+            </div>
+            
+            <div class="component core-component" style="left: 300px; top: 280px; width: 250px;" data-id="discovery">
+                <h3>SimplifiedModuleDiscovery</h3>
+                <p>Finds and loads modules</p>
+                <span class="status-badge status-broken">Issues</span>
+                <span class="status-badge status-mock">Returns Mocks</span>
+            </div>
+            
+            <div class="component core-component" style="left: 650px; top: 280px; width: 250px;" data-id="version-manager">
+                <h3>Version Manager</h3>
+                <p>Handles module versioning</p>
+                <span class="status-badge status-working">Working</span>
+            </div>
+            
+            <!-- Protocol Layer -->
+            <div class="component protocol-component" style="left: 950px; top: 200px; width: 200px;" data-id="bridge-protocol">
+                <h3>BridgeModule Protocol</h3>
+                <p>Original module interface</p>
+                <span class="status-badge status-working">Expected</span>
+            </div>
+            
+            <div class="component protocol-component" style="left: 950px; top: 500px; width: 200px;" data-id="universal-protocol">
+                <h3>UniversalComponent</h3>
+                <p>New module interface</p>
+                <span class="status-badge status-broken">Incompatible</span>
+            </div>
+            
+            <!-- Real Modules -->
+            <div class="component broken-component" style="left: 50px; top: 450px; width: 180px;" data-id="terminal-real">
+                <h3>Terminal (Real)</h3>
+                <p>31KB full terminal</p>
+                <span class="status-badge status-broken">Not Loaded</span>
+            </div>
+            
+            <div class="component broken-component" style="left: 250px; top: 450px; width: 180px;" data-id="personal-real">
+                <h3>PersonalAssistant</h3>
+                <p>AI, Tasks, Calendar</p>
+                <span class="status-badge status-broken">Wrong Protocol</span>
+            </div>
+            
+            <div class="component broken-component" style="left: 450px; top: 450px; width: 180px;" data-id="projects-real">
+                <h3>Projects (Real)</h3>
+                <p>Project management</p>
+                <span class="status-badge status-broken">Wrong Protocol</span>
+            </div>
+            
+            <div class="component broken-component" style="left: 650px; top: 450px; width: 180px;" data-id="documents-real">
+                <h3>Documents (Real)</h3>
+                <p>Document editor</p>
+                <span class="status-badge status-broken">Wrong Protocol</span>
+            </div>
+            
+            <div class="component broken-component" style="left: 850px; top: 450px; width: 180px;" data-id="settings-real">
+                <h3>Settings (Real)</h3>
+                <p>App configuration</p>
+                <span class="status-badge status-broken">Wrong Protocol</span>
+            </div>
+            
+            <!-- Mock Modules -->
+            <div class="component module-component" style="left: 50px; top: 600px; width: 180px;" data-id="terminal-mock">
+                <h3>Terminal (Mock)</h3>
+                <p>Fake terminal UI</p>
+                <span class="status-badge status-mock">Fake</span>
+                <span class="status-badge status-working">Loaded</span>
+            </div>
+            
+            <div class="component module-component" style="left: 250px; top: 600px; width: 180px;" data-id="personal-mock">
+                <h3>PersonalAssistant (Mock)</h3>
+                <p>Fake UI only</p>
+                <span class="status-badge status-mock">Fake</span>
+                <span class="status-badge status-working">Loaded</span>
+            </div>
+            
+            <div class="component module-component" style="left: 450px; top: 600px; width: 180px;" data-id="projects-mock">
+                <h3>Projects (Mock)</h3>
+                <p>Empty shell</p>
+                <span class="status-badge status-mock">Fake</span>
+            </div>
+            
+            <div class="component module-component" style="left: 650px; top: 600px; width: 180px;" data-id="dashboard-mock">
+                <h3>Dashboard (Mock)</h3>
+                <p>Placeholder UI</p>
+                <span class="status-badge status-mock">Fake</span>
+            </div>
+            
+            <!-- Adapter -->
+            <div class="component broken-component" style="left: 1050px; top: 350px; width: 200px;" data-id="adapter">
+                <h3>UniversalModuleAdapter</h3>
+                <p>Failed translator</p>
+                <span class="status-badge status-broken">Type Conflicts</span>
+            </div>
+            
+            <!-- Info Boxes -->
+            <div class="info-box" style="left: 20px; top: 20px;">
+                <h4>🔴 The Core Problem</h4>
+                <p>The app expects modules to speak "BridgeModule" language, but all the real modules were built to speak "UniversalComponent" language. They can't understand each other!</p>
+            </div>
+            
+            <div class="info-box" style="left: 1000px; top: 20px;">
+                <h4>📁 File Locations</h4>
+                <p><strong>Real modules:</strong> /Modules/[name]/<br>
+                <strong>Mock modules:</strong> /Core/MockModules.swift<br>
+                <strong>Discovery:</strong> /Core/ModuleManager/</p>
+            </div>
+            
+            <div class="info-box" style="left: 300px; top: 720px;">
+                <h4>💡 What Should Happen</h4>
+                <p>1. App starts → 2. Module Manager asks Discovery to find modules → 3. Discovery loads REAL modules → 4. Users get full features</p>
+                <br>
+                <h4>❌ What Actually Happens</h4>
+                <p>1. App starts → 2. Module Manager asks Discovery → 3. Discovery returns FAKE modules → 4. Users get empty shells</p>
+            </div>
+        </div>
+        
+        <!-- Legend -->
+        <div class="legend">
+            <h3>Connection Status</h3>
+            <div class="legend-item">
+                <div class="legend-color connection-working"></div>
+                <span>Working Connection</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color connection-broken"></div>
+                <span>Broken Connection</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color connection-partial"></div>
+                <span>Partial/Mock Connection</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color connection-attempted"></div>
+                <span>Failed Fix Attempt</span>
+            </div>
+            <br>
+            <h3>Component Types</h3>
+            <div class="legend-item">
+                <div class="legend-box app-component"></div>
+                <span>Application</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box core-component"></div>
+                <span>Core System</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box module-component"></div>
+                <span>Mock Module</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box broken-component"></div>
+                <span>Broken/Incompatible</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-box protocol-component"></div>
+                <span>Protocol/Language</span>
+            </div>
+        </div>
+        
+        <!-- Detail Panel -->
+        <div class="detail-panel" id="detailPanel">
+            <button class="close-btn" onclick="closeDetail()">×</button>
+            <div id="detailContent"></div>
+        </div>
+        
+        <div class="scroll-hint">↔️ Scroll to see more</div>
+    </div>
+    
+    <script>
+        // Component detailed data
+        const componentData = {
+            'main-app': {
+                name: 'NewBridgeMac Application',
+                type: 'Main Application',
+                status: 'Running',
+                description: 'This is the main application that users see and interact with. Think of it as the "house" that needs rooms (modules) to be useful.',
+                technical: {
+                    'Location': '/Platforms/macOS/NewBridgeMac/',
+                    'Language': 'Swift/SwiftUI',
+                    'Entry Point': 'BridgeMacApp.swift',
+                    'Dependencies': 'BridgeCore, all modules'
+                },
+                functionality: [
+                    'Provides the main window and UI framework',
+                    'Manages the module sidebar navigation',
+                    'Handles module switching when users click',
+                    'Shows module content in the main area'
+                ],
+                issues: [
+                    'Currently only shows mock modules instead of real ones',
+                    'Cannot access the actual functionality users need'
+                ],
+                connections: {
+                    'receives': ['Module Manager'],
+                    'sends': ['User interactions', 'Module requests']
+                }
+            },
+            'module-manager': {
+                name: 'Module Manager',
+                type: 'Core System',
+                status: 'Working (but limited)',
+                description: 'The "butler" of the system - manages which modules are available, loads them, unloads them, and handles communication between modules.',
+                technical: {
+                    'Location': '/Core/ModuleManager/ModuleManager.swift',
+                    'Lines of Code': '~500',
+                    'Key Methods': 'loadModule(), unloadModule(), hotSwap()',
+                    'Design Pattern': 'Singleton Manager'
+                },
+                functionality: [
+                    'Keeps track of all loaded modules',
+                    'Handles module lifecycle (initialization, cleanup)',
+                    'Manages hot-swapping (replacing modules while running)',
+                    'Routes messages between modules'
+                ],
+                issues: [
+                    'Relies on SimplifiedModuleDiscovery which returns mocks',
+                    'Cannot handle UniversalComponent protocol modules'
+                ],
+                success: [
+                    'Hot-swapping system works correctly',
+                    'Module lifecycle management is solid',
+                    'Version checking works properly'
+                ]
+            },
+            'discovery': {
+                name: 'SimplifiedModuleDiscovery',
+                type: 'Core System',
+                status: 'Broken - Returns Mocks',
+                description: 'Supposed to automatically find and load real modules from the file system. Instead, it\'s hardcoded to return fake modules.',
+                technical: {
+                    'Location': '/Core/ModuleManager/SimplifiedModuleDiscovery.swift',
+                    'Problem Line': 'Lines 110-130 in createModuleInstance()',
+                    'Imports': 'Terminal, Projects, PersonalAssistant, etc.',
+                    'Returns': 'RealTerminalModule() // Actually a mock!'
+                },
+                functionality: [
+                    'Imports all real modules at the top of file',
+                    'Has a switch statement for each module type',
+                    'SHOULD return real module instances',
+                    'ACTUALLY returns mock classes with "Real" prefix'
+                ],
+                issues: [
+                    'Line 111: Returns RealPersonalAssistantModule() which is a MOCK',
+                    'Line 117: Returns RealProjectsModule() which is a MOCK',
+                    'The "Real" prefix is a lie - these are all fake modules',
+                    'Real modules use incompatible UniversalComponent protocol'
+                ],
+                whyItHappened: 'The real modules were built with a different architecture (UniversalComponent) that\'s incompatible with what the app expects (BridgeModule).'
+            },
+            'bridge-protocol': {
+                name: 'BridgeModule Protocol',
+                type: 'Protocol/Interface',
+                status: 'Working',
+                description: 'The "language" that the app expects all modules to speak. It\'s like expecting everyone to speak English.',
+                technical: {
+                    'Location': '/Core/BridgeModule.swift',
+                    'Key Properties': 'id, displayName, icon, version, view',
+                    'Key Methods': 'initialize(), cleanup(), receiveMessage()',
+                    'Design': 'Protocol-oriented architecture'
+                },
+                requirements: [
+                    'Must have a unique ID string',
+                    'Must provide a SwiftUI view',
+                    'Must handle initialization and cleanup',
+                    'Must be able to receive messages',
+                    'Can have sub-modules'
+                ],
+                whoUses: [
+                    'Module Manager expects this',
+                    'All mock modules implement this',
+                    'Terminal module (real) uses this',
+                    'App UI expects this'
+                ]
+            },
+            'universal-protocol': {
+                name: 'UniversalComponent Protocol',
+                type: 'Protocol/Interface',
+                status: 'Incompatible',
+                description: 'A different "language" that newer modules speak. It\'s like these modules only speak French while the app only understands English.',
+                technical: {
+                    'Location': 'Multiple! Each module has its own copy',
+                    'Problem': 'Defined in 5+ different places',
+                    'Base Class': 'BaseComponent',
+                    'Different From': 'BridgeModule in every way'
+                },
+                requirements: [
+                    'Uses UUID instead of string ID',
+                    'Different initialization pattern',
+                    'Different view system',
+                    'Hierarchy-based (Module/Submodule/Task/etc)',
+                    'Component-based architecture'
+                ],
+                issues: [
+                    'Completely incompatible with BridgeModule',
+                    'Defined separately in each module (causes conflicts)',
+                    'Uses different types (ComponentVersion vs ModuleVersion)',
+                    'Different message passing system'
+                ],
+                modules: ['PersonalAssistant', 'Projects', 'Documents', 'Settings']
+            },
+            'terminal-real': {
+                name: 'Terminal Module (Real)',
+                type: 'Real Module',
+                status: 'Not Loaded',
+                description: 'A full-featured terminal/command line built into the app. Has 31KB of real code but isn\'t being used.',
+                technical: {
+                    'Location': '/Modules/Terminal/Sources/Terminal/',
+                    'Size': '31KB (TerminalModule.swift)',
+                    'Protocol': 'BridgeModule (correct one!)',
+                    'Features': 'PTY support, ANSI colors, tabs'
+                },
+                functionality: [
+                    'Full macOS terminal with PTY support',
+                    'Claude Code integration for AI assistance',
+                    'Auto-permission system for security dialogs',
+                    'Multi-session support with tabs',
+                    'ANSI color and escape sequences',
+                    'Hot-swappable for updates'
+                ],
+                issues: [
+                    'AutoPermissionSystem might be causing problems',
+                    'SimplifiedModuleDiscovery returns mock instead',
+                    'Even though it uses the RIGHT protocol!'
+                ],
+                specialNote: 'This module COULD work because it speaks BridgeModule, but it\'s still not being loaded due to other issues.'
+            },
+            'personal-real': {
+                name: 'PersonalAssistant Module (Real)',
+                type: 'Real Module',
+                status: 'Wrong Protocol',
+                description: 'A comprehensive personal productivity suite with AI chat, task management, calendar, and voice commands.',
+                technical: {
+                    'Location': '/Modules/PersonalAssistant/',
+                    'Protocol': 'UniversalComponent (wrong!)',
+                    'Base Class': 'BaseComponent',
+                    'Submodules': '4 (Tasks, Calendar, AI, Voice)'
+                },
+                functionality: [
+                    'Task Management - Create and track tasks',
+                    'Calendar Integration - Schedule events',
+                    'AI Chat - Intelligent conversations',
+                    'Voice Commands - Voice control',
+                    'Beautiful tab-based UI'
+                ],
+                issues: [
+                    'Uses UniversalComponent instead of BridgeModule',
+                    'Cannot be loaded by Module Manager',
+                    'Type system prevents integration',
+                    'All this functionality is wasted!'
+                ],
+                attemptedFix: 'UniversalModuleAdapter tried to translate but failed due to type conflicts'
+            },
+            'adapter': {
+                name: 'UniversalModuleAdapter',
+                type: 'Adapter/Translator',
+                status: 'Failed',
+                description: 'Like a translator that was supposed to help modules speaking different "languages" work together. It doesn\'t work.',
+                technical: {
+                    'Location': '/Core/ModuleManager/UniversalModuleAdapter.swift',
+                    'Purpose': 'Bridge UniversalComponent to BridgeModule',
+                    'Lines': '~200',
+                    'Status': 'Compilation errors'
+                },
+                whatItTries: [
+                    'Wrap UniversalComponent modules',
+                    'Translate between protocol requirements',
+                    'Map properties (UUID to string ID, etc)',
+                    'Convert message formats'
+                ],
+                issues: [
+                    'AnyCodable type exists in multiple places',
+                    'Ambiguous type references',
+                    'Actor isolation conflicts',
+                    'Cannot properly convert between protocols'
+                ],
+                errors: [
+                    'UniversalComponent is ambiguous for type lookup',
+                    'AnyCodable conflicts between packages',
+                    'Main actor isolation warnings'
+                ]
+            },
+            'terminal-mock': {
+                name: 'Terminal Module (Mock)',
+                type: 'Mock Module',
+                status: 'Loaded but Fake',
+                description: 'A fake terminal that just shows a pretty UI. No actual terminal functionality.',
+                technical: {
+                    'Location': '/Core/MockModules.swift',
+                    'Lines': 'About 50 lines',
+                    'Class': 'RealTerminalModule (misleading name!)',
+                    'Content': 'Just UI, no functionality'
+                },
+                whatItShows: [
+                    'Nice looking terminal interface',
+                    'Fake feature list',
+                    'No actual terminal capabilities',
+                    'Just enough to fool users initially'
+                ],
+                problem: 'Users think they\'re getting a terminal but it\'s just a picture of one.'
+            }
+        };
+        
+        // Connection data
+        const connections = [
+            { from: 'main-app', to: 'module-manager', type: 'working' },
+            { from: 'module-manager', to: 'discovery', type: 'working' },
+            { from: 'module-manager', to: 'version-manager', type: 'working' },
+            { from: 'module-manager', to: 'bridge-protocol', type: 'working' },
+            { from: 'discovery', to: 'terminal-mock', type: 'partial' },
+            { from: 'discovery', to: 'personal-mock', type: 'partial' },
+            { from: 'discovery', to: 'projects-mock', type: 'partial' },
+            { from: 'discovery', to: 'dashboard-mock', type: 'partial' },
+            { from: 'discovery', to: 'terminal-real', type: 'broken' },
+            { from: 'discovery', to: 'personal-real', type: 'broken' },
+            { from: 'discovery', to: 'projects-real', type: 'broken' },
+            { from: 'discovery', to: 'documents-real', type: 'broken' },
+            { from: 'discovery', to: 'settings-real', type: 'broken' },
+            { from: 'terminal-real', to: 'bridge-protocol', type: 'working' },
+            { from: 'personal-real', to: 'universal-protocol', type: 'working' },
+            { from: 'projects-real', to: 'universal-protocol', type: 'working' },
+            { from: 'documents-real', to: 'universal-protocol', type: 'working' },
+            { from: 'settings-real', to: 'universal-protocol', type: 'working' },
+            { from: 'terminal-mock', to: 'bridge-protocol', type: 'working' },
+            { from: 'personal-mock', to: 'bridge-protocol', type: 'working' },
+            { from: 'adapter', to: 'bridge-protocol', type: 'attempted' },
+            { from: 'adapter', to: 'universal-protocol', type: 'attempted' },
+            { from: 'adapter', to: 'personal-real', type: 'broken' }
+        ];
+        
+        // Draw connections
+        function drawConnections() {
+            const svg = document.getElementById('connections');
+            svg.innerHTML = '';
+            
+            connections.forEach(conn => {
+                const fromEl = document.querySelector(`[data-id="${conn.from}"]`);
+                const toEl = document.querySelector(`[data-id="${conn.to}"]`);
+                
+                if (fromEl && toEl) {
+                    const fromRect = fromEl.getBoundingClientRect();
+                    const toRect = toEl.getBoundingClientRect();
+                    const containerRect = svg.parentElement.getBoundingClientRect();
+                    
+                    const fromX = fromRect.left + fromRect.width / 2 - containerRect.left;
+                    const fromY = fromRect.bottom - containerRect.top;
+                    const toX = toRect.left + toRect.width / 2 - containerRect.left;
+                    const toY = toRect.top - containerRect.top;
+                    
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const midY = (fromY + toY) / 2;
+                    
+                    path.setAttribute('d', `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`);
+                    path.setAttribute('class', `connection connection-${conn.type}`);
+                    
+                    svg.appendChild(path);
+                }
+            });
+        }
+        
+        // Show detail panel
+        function showDetail(componentId) {
+            const data = componentData[componentId];
+            if (!data) return;
+            
+            let html = `<h2>${data.name}</h2>`;
+            
+            // Status
+            html += `<div class="detail-section">
+                <h3>Status</h3>
+                <p><strong>${data.status}</strong></p>
+                <p>${data.description}</p>
+            </div>`;
+            
+            // Technical Details
+            if (data.technical) {
+                html += `<div class="detail-section">
+                    <h3>Technical Details</h3>
+                    <ul>`;
+                for (const [key, value] of Object.entries(data.technical)) {
+                    html += `<li><strong>${key}:</strong> ${value}</li>`;
+                }
+                html += `</ul></div>`;
+            }
+            
+            // Functionality
+            if (data.functionality) {
+                html += `<div class="detail-section">
+                    <h3>What It Does</h3>
+                    <ul class="success-list">`;
+                data.functionality.forEach(func => {
+                    html += `<li>${func}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            
+            // Issues
+            if (data.issues && data.issues.length > 0) {
+                html += `<div class="detail-section">
+                    <h3>Problems</h3>
+                    <ul class="issue-list">`;
+                data.issues.forEach(issue => {
+                    html += `<li>${issue}</li>`;
+                });
+                html += `</ul></div>`;
+            }
+            
+            // Why it happened
+            if (data.whyItHappened) {
+                html += `<div class="detail-section">
+                    <h3>Why This Happened</h3>
+                    <p>${data.whyItHappened}</p>
+                </div>`;
+            }
+            
+            // Special notes
+            if (data.specialNote) {
+                html += `<div class="detail-section" style="background: rgba(0, 122, 255, 0.1);">
+                    <h3>Important Note</h3>
+                    <p>${data.specialNote}</p>
+                </div>`;
+            }
+            
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('detailPanel').classList.add('active');
+        }
+        
+        function closeDetail() {
+            document.getElementById('detailPanel').classList.remove('active');
+        }
+        
+        // Setup click handlers
+        document.querySelectorAll('.component').forEach(comp => {
+            comp.addEventListener('click', () => {
+                showDetail(comp.dataset.id);
+            });
+        });
+        
+        // Initial connection draw
+        setTimeout(drawConnections, 100);
+        
+        // Redraw on resize
+        window.addEventListener('resize', drawConnections);
+    </script>
+</body>
+</html>

@@ -12,17 +12,33 @@ let package = Package(
             targets: ["BridgeCore"]
         ),
     ],
-    dependencies: [],
+    dependencies: [
+        // Real module dependencies
+        .package(path: "../Modules/Terminal"),
+        .package(path: "../Modules/Projects"),
+        .package(path: "../Modules/PersonalAssistant"),
+        .package(path: "../Modules/Documents"),
+        .package(path: "../Modules/Settings"),
+        .package(path: "../UniversalTemplate")
+    ],
     targets: [
         .target(
             name: "BridgeCore",
-            dependencies: [],
+            dependencies: [
+                .product(name: "Terminal", package: "Terminal"),
+                .product(name: "Projects", package: "Projects"),
+                .product(name: "PersonalAssistant", package: "PersonalAssistant"),
+                .product(name: "Documents", package: "Documents"),
+                .product(name: "Settings", package: "Settings"),
+                .product(name: "UniversalTemplate", package: "UniversalTemplate")
+            ],
             path: ".",
             sources: [
                 "BridgeModule.swift",
                 "ModuleManager/ModuleManager.swift",
+                "ModuleManager/ModuleDiscovery.swift",
                 "VersionManager/VersionManager.swift",
-                "MockModules.swift"
+                "UniversalTemplate.swift"
             ],
             swiftSettings: [
                 .define("BRIDGE_CORE")

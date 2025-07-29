@@ -59,7 +59,7 @@ public class ProjectsModule: BaseComponent {
     
     // MARK: - Initialization
     
-    public override init() {
+    public required init() {
         super.init()
         self.name = "Projects"
         self.hierarchyLevel = .module
@@ -206,7 +206,7 @@ public enum ProjectView: String, CaseIterable {
 }
 
 /// Project model
-public struct Project: Identifiable {
+public struct Project: Identifiable, Hashable {
     public let id = UUID()
     public let name: String
     public let path: String
@@ -216,7 +216,7 @@ public struct Project: Identifiable {
 }
 
 /// Project status
-public enum ProjectStatus {
+public enum ProjectStatus: Hashable {
     case active
     case inactive
     case archived
@@ -243,7 +243,7 @@ public enum ProjectStatus {
 /// Mock Project Browser submodule
 @MainActor
 class MockProjectBrowser: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Project Browser"
         self.hierarchyLevel = .submodule
@@ -260,7 +260,7 @@ class MockProjectBrowser: BaseComponent {
 /// Mock AI Assistant submodule
 @MainActor
 class MockAIAssistant: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "AI Assistant"
         self.hierarchyLevel = .submodule
@@ -277,7 +277,7 @@ class MockAIAssistant: BaseComponent {
 /// Mock Git Integration submodule
 @MainActor
 class MockGitIntegration: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Git Integration"
         self.hierarchyLevel = .submodule
@@ -294,7 +294,7 @@ class MockGitIntegration: BaseComponent {
 /// Mock Build System submodule
 @MainActor
 class MockBuildSystem: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Build System"
         self.hierarchyLevel = .submodule

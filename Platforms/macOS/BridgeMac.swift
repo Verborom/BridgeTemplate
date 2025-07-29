@@ -130,7 +130,7 @@ struct ModuleSidebar: View {
                     .foregroundStyle(LinearGradient.arcPrimary)
                     .shadow(color: Color.bridgePrimary.opacity(0.3), radius: 10)
                 
-                Text("Bridge Template v2.0")
+                Text("Bridge Template v3.0")
                     .font(BridgeTypography.title2)
                     .foregroundColor(.bridgeTextPrimary)
                 

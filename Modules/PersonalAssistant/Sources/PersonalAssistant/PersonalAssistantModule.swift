@@ -49,7 +49,7 @@ public class PersonalAssistantModule: BaseComponent {
     
     // MARK: - Initialization
     
-    public override init() {
+    public required init() {
         super.init()
         self.name = "Personal Assistant"
         self.hierarchyLevel = .module
@@ -164,8 +164,8 @@ public enum SubmoduleTab: String, CaseIterable {
 
 /// Mock Task Management submodule
 @MainActor
-class MockTaskManagement: BaseComponent {
-    override init() {
+public class MockTaskManagement: BaseComponent {
+    public required init() {
         super.init()
         self.name = "Task Management"
         self.hierarchyLevel = .submodule
@@ -174,15 +174,15 @@ class MockTaskManagement: BaseComponent {
         self.description = "Organize and track personal tasks"
     }
     
-    override func createView() -> AnyView {
+    public override func createView() -> AnyView {
         AnyView(TaskManagementView())
     }
 }
 
 /// Mock Calendar Integration submodule
 @MainActor
-class MockCalendarIntegration: BaseComponent {
-    override init() {
+public class MockCalendarIntegration: BaseComponent {
+    public required init() {
         super.init()
         self.name = "Calendar Integration"
         self.hierarchyLevel = .submodule
@@ -191,15 +191,15 @@ class MockCalendarIntegration: BaseComponent {
         self.description = "Schedule and manage events"
     }
     
-    override func createView() -> AnyView {
+    public override func createView() -> AnyView {
         AnyView(CalendarIntegrationView())
     }
 }
 
 /// Mock AI Chat submodule
 @MainActor
-class MockAIChat: BaseComponent {
-    override init() {
+public class MockAIChat: BaseComponent {
+    public required init() {
         super.init()
         self.name = "AI Chat"
         self.hierarchyLevel = .submodule
@@ -208,15 +208,15 @@ class MockAIChat: BaseComponent {
         self.description = "Intelligent conversation interface"
     }
     
-    override func createView() -> AnyView {
+    public override func createView() -> AnyView {
         AnyView(AIChatView())
     }
 }
 
 /// Mock Voice Commands submodule
 @MainActor
-class MockVoiceCommands: BaseComponent {
-    override init() {
+public class MockVoiceCommands: BaseComponent {
+    public required init() {
         super.init()
         self.name = "Voice Commands"
         self.hierarchyLevel = .submodule
@@ -225,7 +225,7 @@ class MockVoiceCommands: BaseComponent {
         self.description = "Voice-controlled operations"
     }
     
-    override func createView() -> AnyView {
+    public override func createView() -> AnyView {
         AnyView(VoiceCommandsView())
     }
 }

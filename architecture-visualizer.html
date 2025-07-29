@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BridgeTemplate Architecture Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            overflow: hidden;
+        }
+        
+        #canvas {
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            max-width: 300px;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .tooltip.visible {
+            opacity: 1;
+        }
+        
+        .legend {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border-radius: 4px;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+        }
+        
+        .info-panel h2 {
+            margin: 0 0 12px 0;
+            font-size: 20px;
+            color: #1d1d1f;
+        }
+        
+        .info-panel p {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #424245;
+        }
+        
+        .issue-badge {
+            display: inline-block;
+            background: #ff3b30;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .working-badge {
+            background: #34c759;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="tooltip" id="tooltip"></div>
+    
+    <div class="info-panel">
+        <h2>BridgeTemplate Architecture</h2>
+        <p><strong>What is it?</strong> A modular app system where pieces (modules) can be added, removed, or updated while the app is running.</p>
+        <p><strong>The Problem:</strong> There are two different "languages" (protocols) that modules can speak, and they can't understand each other!</p>
+        <p><strong>Hover over any component</strong> to learn more about it and see what's working or broken.</p>
+    </div>
+    
+    <div class="legend">
+        <h3>Connection Status</h3>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #34c759;"></div>
+            <span>Working Connection</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ff3b30;"></div>
+            <span>Broken Connection</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ff9500;"></div>
+            <span>Partial/Mock Connection</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #007aff;"></div>
+            <span>Attempted Fix</span>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const tooltip = document.getElementById('tooltip');
+        
+        // Set canvas size
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // Component definitions
+        const components = [
+            {
+                id: 'app',
+                name: 'NewBridgeMac App',
+                x: canvas.width / 2 - 100,
+                y: 50,
+                width: 200,
+                height: 80,
+                color: '#007aff',
+                description: 'The main app that users see. Think of it as a house that needs rooms (modules) to be useful.',
+                issues: []
+            },
+            {
+                id: 'moduleManager',
+                name: 'Module Manager',
+                x: canvas.width / 2 - 100,
+                y: 180,
+                width: 200,
+                height: 80,
+                color: '#34c759',
+                description: 'The "butler" that manages all modules - it decides which rooms to show in the house.',
+                issues: []
+            },
+            {
+                id: 'discovery',
+                name: 'Module Discovery',
+                x: canvas.width / 2 - 300,
+                y: 310,
+                width: 180,
+                height: 80,
+                color: '#ff9500',
+                description: 'Supposed to find real modules automatically, but currently returns fake ones instead.',
+                issues: ['Returns mock modules instead of real ones']
+            },
+            {
+                id: 'bridgeProtocol',
+                name: 'BridgeModule Protocol',
+                x: canvas.width / 2 + 120,
+                y: 310,
+                width: 180,
+                height: 80,
+                color: '#5856d6',
+                description: 'One "language" that modules can speak. The app expects modules to speak this language.',
+                issues: []
+            },
+            {
+                id: 'realTerminal',
+                name: 'Terminal Module (Real)',
+                x: 80,
+                y: 450,
+                width: 160,
+                height: 70,
+                color: '#ff3b30',
+                description: 'A real terminal/command line module. It speaks BridgeModule language correctly but has other issues.',
+                issues: ['Has AutoPermissionSystem that might cause problems', 'Currently not loaded']
+            },
+            {
+                id: 'mockTerminal',
+                name: 'Terminal Module (Mock)',
+                x: 80,
+                y: 540,
+                width: 160,
+                height: 70,
+                color: '#34c759',
+                description: 'A fake terminal that pretends to be real. Works because it speaks the right language.',
+                issues: []
+            },
+            {
+                id: 'personalAssistant',
+                name: 'Personal Assistant (Real)',
+                x: 280,
+                y: 450,
+                width: 160,
+                height: 70,
+                color: '#ff3b30',
+                description: 'A real AI assistant module with task management, calendar, etc. Speaks wrong language!',
+                issues: ['Uses UniversalComponent protocol', 'Cannot be loaded by the app']
+            },
+            {
+                id: 'mockPersonalAssistant',
+                name: 'Personal Assistant (Mock)',
+                x: 280,
+                y: 540,
+                width: 160,
+                height: 70,
+                color: '#ff9500',
+                description: 'A fake assistant that looks real but has no actual features. Just shows a pretty screen.',
+                issues: ['No real functionality']
+            },
+            {
+                id: 'projects',
+                name: 'Projects Module (Real)',
+                x: 480,
+                y: 450,
+                width: 160,
+                height: 70,
+                color: '#ff3b30',
+                description: 'Real project management module. Also speaks the wrong language (UniversalComponent).',
+                issues: ['Uses UniversalComponent protocol', 'Cannot be loaded']
+            },
+            {
+                id: 'documents',
+                name: 'Documents Module (Real)',
+                x: 680,
+                y: 450,
+                width: 160,
+                height: 70,
+                color: '#ff3b30',
+                description: 'Real document editor module. Same problem - wrong language.',
+                issues: ['Uses UniversalComponent protocol', 'Cannot be loaded']
+            },
+            {
+                id: 'settings',
+                name: 'Settings Module (Real)',
+                x: 880,
+                y: 450,
+                width: 160,
+                height: 70,
+                color: '#ff3b30',
+                description: 'Real settings module. You guessed it - wrong language too!',
+                issues: ['Uses UniversalComponent protocol', 'Cannot be loaded']
+            },
+            {
+                id: 'universalProtocol',
+                name: 'UniversalComponent Protocol',
+                x: canvas.width / 2 - 100,
+                y: 650,
+                width: 200,
+                height: 80,
+                color: '#ff3b30',
+                description: 'The OTHER "language" that newer modules speak. Incompatible with BridgeModule!',
+                issues: ['Not compatible with BridgeModule', 'Defined in multiple places causing confusion']
+            },
+            {
+                id: 'adapter',
+                name: 'UniversalModuleAdapter',
+                x: canvas.width / 2 + 250,
+                y: 450,
+                width: 180,
+                height: 80,
+                color: '#007aff',
+                description: 'A "translator" that was supposed to help modules speak both languages. Doesn\'t work properly.',
+                issues: ['Type conflicts', 'Cannot properly translate between protocols']
+            }
+        ];
+        
+        // Connection definitions
+        const connections = [
+            { from: 'app', to: 'moduleManager', color: '#34c759', status: 'working' },
+            { from: 'moduleManager', to: 'discovery', color: '#ff9500', status: 'partial' },
+            { from: 'moduleManager', to: 'bridgeProtocol', color: '#34c759', status: 'working' },
+            { from: 'discovery', to: 'mockTerminal', color: '#34c759', status: 'working' },
+            { from: 'discovery', to: 'mockPersonalAssistant', color: '#ff9500', status: 'partial' },
+            { from: 'discovery', to: 'realTerminal', color: '#ff3b30', status: 'broken', dashed: true },
+            { from: 'discovery', to: 'personalAssistant', color: '#ff3b30', status: 'broken', dashed: true },
+            { from: 'discovery', to: 'projects', color: '#ff3b30', status: 'broken', dashed: true },
+            { from: 'discovery', to: 'documents', color: '#ff3b30', status: 'broken', dashed: true },
+            { from: 'discovery', to: 'settings', color: '#ff3b30', status: 'broken', dashed: true },
+            { from: 'personalAssistant', to: 'universalProtocol', color: '#34c759', status: 'working' },
+            { from: 'projects', to: 'universalProtocol', color: '#34c759', status: 'working' },
+            { from: 'documents', to: 'universalProtocol', color: '#34c759', status: 'working' },
+            { from: 'settings', to: 'universalProtocol', color: '#34c759', status: 'working' },
+            { from: 'mockTerminal', to: 'bridgeProtocol', color: '#34c759', status: 'working' },
+            { from: 'mockPersonalAssistant', to: 'bridgeProtocol', color: '#34c759', status: 'working' },
+            { from: 'adapter', to: 'universalProtocol', color: '#007aff', status: 'attempted' },
+            { from: 'adapter', to: 'bridgeProtocol', color: '#007aff', status: 'attempted' },
+            { from: 'adapter', to: 'personalAssistant', color: '#ff3b30', status: 'broken', dashed: true }
+        ];
+        
+        // Mouse position
+        let mouseX = 0;
+        let mouseY = 0;
+        
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Check if hovering over any component
+            let hoveredComponent = null;
+            for (const component of components) {
+                if (mouseX >= component.x && mouseX <= component.x + component.width &&
+                    mouseY >= component.y && mouseY <= component.y + component.height) {
+                    hoveredComponent = component;
+                    break;
+                }
+            }
+            
+            if (hoveredComponent) {
+                showTooltip(hoveredComponent);
+            } else {
+                hideTooltip();
+            }
+            
+            draw();
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            hideTooltip();
+        });
+        
+        function showTooltip(component) {
+            let content = `<strong>${component.name}</strong><br><br>${component.description}`;
+            
+            if (component.issues.length > 0) {
+                content += '<br><br><strong>Issues:</strong><br>';
+                component.issues.forEach(issue => {
+                    content += `• ${issue}<br>`;
+                });
+            }
+            
+            tooltip.innerHTML = content;
+            tooltip.style.left = mouseX + 10 + 'px';
+            tooltip.style.top = mouseY + 10 + 'px';
+            
+            // Keep tooltip on screen
+            const rect = tooltip.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                tooltip.style.left = mouseX - rect.width - 10 + 'px';
+            }
+            if (rect.bottom > window.innerHeight) {
+                tooltip.style.top = mouseY - rect.height - 10 + 'px';
+            }
+            
+            tooltip.classList.add('visible');
+        }
+        
+        function hideTooltip() {
+            tooltip.classList.remove('visible');
+        }
+        
+        function drawConnection(from, to, color, dashed = false) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            
+            if (dashed) {
+                ctx.setLineDash([5, 5]);
+            }
+            
+            ctx.beginPath();
+            
+            // Calculate connection points
+            const fromCenterX = from.x + from.width / 2;
+            const fromCenterY = from.y + from.height / 2;
+            const toCenterX = to.x + to.width / 2;
+            const toCenterY = to.y + to.height / 2;
+            
+            // Start from edge of 'from' component
+            let startX = fromCenterX;
+            let startY = from.y + from.height;
+            
+            // End at edge of 'to' component
+            let endX = toCenterX;
+            let endY = to.y;
+            
+            // Draw curved line
+            const controlY = (startY + endY) / 2;
+            ctx.moveTo(startX, startY);
+            ctx.quadraticCurveTo(startX, controlY, endX, endY);
+            ctx.stroke();
+            
+            // Draw arrowhead
+            const angle = Math.atan2(endY - controlY, endX - startX);
+            ctx.save();
+            ctx.translate(endX, endY);
+            ctx.rotate(angle + Math.PI / 2);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-8, -12);
+            ctx.lineTo(8, -12);
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.setLineDash([]);
+        }
+        
+        function drawComponent(component) {
+            // Check if mouse is hovering
+            const isHovered = mouseX >= component.x && mouseX <= component.x + component.width &&
+                            mouseY >= component.y && mouseY <= component.y + component.height;
+            
+            // Shadow
+            if (isHovered) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+                ctx.shadowBlur = 20;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 4;
+            }
+            
+            // Background
+            ctx.fillStyle = component.color + (isHovered ? 'FF' : 'DD');
+            ctx.fillRect(component.x, component.y, component.width, component.height);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Border
+            ctx.strokeStyle = component.color;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(component.x, component.y, component.width, component.height);
+            
+            // Text
+            ctx.fillStyle = 'white';
+            ctx.font = '14px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Word wrap
+            const words = component.name.split(' ');
+            const lineHeight = 18;
+            let line = '';
+            let y = component.y + component.height / 2 - (words.length > 2 ? lineHeight / 2 : 0);
+            
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                const testWidth = metrics.width;
+                
+                if (testWidth > component.width - 20 && n > 0) {
+                    ctx.fillText(line, component.x + component.width / 2, y);
+                    line = words[n] + ' ';
+                    y += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line, component.x + component.width / 2, y);
+            
+            // Issue indicator
+            if (component.issues.length > 0) {
+                ctx.fillStyle = '#ff3b30';
+                ctx.beginPath();
+                ctx.arc(component.x + component.width - 10, component.y + 10, 6, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px -apple-system, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('!', component.x + component.width - 10, component.y + 10);
+            }
+        }
+        
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw connections first
+            connections.forEach(conn => {
+                const from = components.find(c => c.id === conn.from);
+                const to = components.find(c => c.id === conn.to);
+                if (from && to) {
+                    drawConnection(from, to, conn.color, conn.dashed);
+                }
+            });
+            
+            // Draw components
+            components.forEach(component => {
+                drawComponent(component);
+            });
+            
+            // Draw title
+            ctx.fillStyle = '#1d1d1f';
+            ctx.font = 'bold 24px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('BridgeTemplate Module System Architecture', canvas.width / 2, 30);
+        }
+        
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

@@ -61,7 +61,7 @@ public class SettingsModule: BaseComponent {
     
     // MARK: - Initialization
     
-    public override init() {
+    public required init() {
         // Initialize default settings
         self.settings = AppSettings()
         
@@ -163,7 +163,7 @@ public class SettingsModule: BaseComponent {
     }
     
     /// Load saved settings
-    private func loadSettings() {
+    public func loadSettings() {
         // In a real app, load from UserDefaults or persistent storage
         // For now, use defaults
     }
@@ -279,7 +279,7 @@ public struct ModuleSettings {
 /// Mock General Settings submodule
 @MainActor
 class MockGeneralSettings: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "General"
         self.hierarchyLevel = .submodule
@@ -289,14 +289,22 @@ class MockGeneralSettings: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(GeneralSettingsView())
+        struct MockGeneralSettingsWrapper: View {
+            @State private var settings = GeneralSettings()
+            @State private var hasChanges = false
+            
+            var body: some View {
+                GeneralSettingsView(settings: $settings, hasChanges: $hasChanges)
+            }
+        }
+        return AnyView(MockGeneralSettingsWrapper())
     }
 }
 
 /// Mock Appearance Settings submodule
 @MainActor
 class MockAppearanceSettings: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Appearance"
         self.hierarchyLevel = .submodule
@@ -306,14 +314,22 @@ class MockAppearanceSettings: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(AppearanceSettingsView())
+        struct MockAppearanceSettingsWrapper: View {
+            @State private var settings = AppearanceSettings()
+            @State private var hasChanges = false
+            
+            var body: some View {
+                AppearanceSettingsView(settings: $settings, hasChanges: $hasChanges)
+            }
+        }
+        return AnyView(MockAppearanceSettingsWrapper())
     }
 }
 
 /// Mock Modules Settings submodule
 @MainActor
 class MockModulesSettings: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Modules"
         self.hierarchyLevel = .submodule
@@ -323,14 +339,22 @@ class MockModulesSettings: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(ModulesSettingsView())
+        struct MockModulesSettingsWrapper: View {
+            @State private var settings = ModuleSettings()
+            @State private var hasChanges = false
+            
+            var body: some View {
+                ModulesSettingsView(settings: $settings, hasChanges: $hasChanges)
+            }
+        }
+        return AnyView(MockModulesSettingsWrapper())
     }
 }
 
 /// Mock About Settings submodule
 @MainActor
 class MockAboutSettings: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "About"
         self.hierarchyLevel = .submodule

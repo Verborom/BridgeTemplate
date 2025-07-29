@@ -45,13 +45,13 @@ public class DocumentsModule: BaseComponent {
     // MARK: - Properties
     
     /// Currently open document
-    @Published public var currentDocument: Document?
+    @Published public var currentDocument: DocumentItem?
     
     /// All available documents
-    @Published public var documents: [Document] = []
+    @Published public var documents: [DocumentItem] = []
     
     /// Search results
-    @Published public var searchResults: [Document] = []
+    @Published public var searchResults: [DocumentItem] = []
     
     /// Submodule instances
     @Published private var textEditor: MockTextEditor?
@@ -67,7 +67,7 @@ public class DocumentsModule: BaseComponent {
     
     // MARK: - Initialization
     
-    public override init() {
+    public required init() {
         super.init()
         self.name = "Documents"
         self.hierarchyLevel = .module
@@ -148,12 +148,11 @@ public class DocumentsModule: BaseComponent {
     /// Create a new document
     /// - Parameter name: The document name
     public func createNewDocument(_ name: String) {
-        let document = Document(
+        let document = DocumentItem(
             name: name,
-            type: .markdown,
             content: "# \(name)\n\nStart writing...",
             lastModified: Date(),
-            size: 0
+            type: .markdown
         )
         documents.append(document)
         currentDocument = document
@@ -176,9 +175,8 @@ public class DocumentsModule: BaseComponent {
     /// Load demo documents
     private func loadDemoDocuments() {
         documents = [
-            Document(
+            DocumentItem(
                 name: "README.md",
-                type: .markdown,
                 content: """
                 # Bridge Template
                 
@@ -191,29 +189,26 @@ public class DocumentsModule: BaseComponent {
                 - Complete automation
                 """,
                 lastModified: Date(),
-                size: 245
+                type: .markdown
             ),
-            Document(
+            DocumentItem(
                 name: "Architecture.md",
-                type: .markdown,
                 content: """
                 # System Architecture
                 
                 The Bridge Template uses a modular architecture...
                 """,
                 lastModified: Date().addingTimeInterval(-3600),
-                size: 1024
+                type: .markdown
             ),
-            Document(
+            DocumentItem(
                 name: "Notes.txt",
-                type: .text,
                 content: "Important project notes go here...",
                 lastModified: Date().addingTimeInterval(-86400),
-                size: 35
+                type: .text
             ),
-            Document(
+            DocumentItem(
                 name: "Code.swift",
-                type: .code,
                 content: """
                 import SwiftUI
                 
@@ -224,7 +219,7 @@ public class DocumentsModule: BaseComponent {
                 }
                 """,
                 lastModified: Date().addingTimeInterval(-172800),
-                size: 128
+                type: .code
             )
         ]
     }
@@ -287,7 +282,7 @@ public enum DocumentType {
 /// Mock Text Editor submodule
 @MainActor
 class MockTextEditor: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Text Editor"
         self.hierarchyLevel = .submodule
@@ -297,14 +292,17 @@ class MockTextEditor: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(TextEditorView())
+        AnyView(Text("Text Editor")
+            .font(.title)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity))
     }
 }
 
 /// Mock Markdown Preview submodule
 @MainActor
 class MockMarkdownPreview: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Markdown Preview"
         self.hierarchyLevel = .submodule
@@ -314,14 +312,17 @@ class MockMarkdownPreview: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(MarkdownPreviewView())
+        AnyView(Text("Markdown Preview")
+            .font(.title)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity))
     }
 }
 
 /// Mock File Browser submodule
 @MainActor
 class MockFileBrowser: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "File Browser"
         self.hierarchyLevel = .submodule
@@ -331,14 +332,17 @@ class MockFileBrowser: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(FileBrowserView())
+        AnyView(Text("File Browser")
+            .font(.title)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity))
     }
 }
 
 /// Mock Search submodule
 @MainActor
 class MockSearch: BaseComponent {
-    override init() {
+    required init() {
         super.init()
         self.name = "Search"
         self.hierarchyLevel = .submodule
@@ -348,7 +352,48 @@ class MockSearch: BaseComponent {
     }
     
     override func createView() -> AnyView {
-        AnyView(SearchView())
+        AnyView(Text("Search")
+            .font(.title)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity))
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Document model
+public struct DocumentItem: Identifiable, Hashable {
+    public let id = UUID()
+    public var name: String
+    public var content: String
+    public var lastModified: Date
+    public var type: DocumentType
+    
+    public init(name: String, content: String, lastModified: Date, type: DocumentType) {
+        self.name = name
+        self.content = content
+        self.lastModified = lastModified
+        self.type = type
+    }
+    
+    public enum DocumentType {
+        case text, markdown, code
+        
+        var icon: String {
+            switch self {
+            case .text: return "doc.text"
+            case .markdown: return "doc.richtext"
+            case .code: return "doc.text.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .text: return .blue
+            case .markdown: return .purple
+            case .code: return .orange
+            }
+        }
     }
 }
 
@@ -379,7 +424,7 @@ struct DocumentsModuleView: View {
                 List(selection: $module.currentDocument) {
                     ForEach(module.documents) { document in
                         DocumentRow(document: document)
-                            .tag(document as Document?)
+                            .tag(document as DocumentItem?)
                     }
                 }
             }
@@ -436,7 +481,7 @@ struct DocumentsModuleView: View {
 
 /// Document row view
 struct DocumentRow: View {
-    let document: Document
+    let document: DocumentItem
     
     var body: some View {
         HStack {
@@ -447,7 +492,7 @@ struct DocumentRow: View {
                 Text(document.name)
                     .fontWeight(.medium)
                 HStack {
-                    Text(formatFileSize(document.size))
+                    Text(formatFileSize(document.content.count))
                     Text("•")
                     Text(formatDate(document.lastModified))
                 }
@@ -689,7 +734,7 @@ struct DocumentSearchView: View {
 
 /// Search result item
 struct SearchResultItem: View {
-    let document: Document
+    let document: DocumentItem
     let query: String
     
     var body: some View {
@@ -729,5 +774,53 @@ extension Set where Element == String {
         } else {
             insert(element)
         }
+    }
+}
+
+// MARK: - Helper Views
+
+/// File item in browser
+struct FileItem: View {
+    let name: String
+    let isFolder: Bool
+    let indent: Int
+    
+    var body: some View {
+        HStack {
+            ForEach(0..<indent, id: \.self) { _ in
+                Text("  ")
+            }
+            Image(systemName: isFolder ? "folder" : "doc")
+                .foregroundColor(isFolder ? .blue : .gray)
+            Text(name)
+            Spacer()
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+/// Folder item in browser (renamed to avoid conflict)
+struct FolderItemBrowser: View {
+    let name: String
+    let indent: Int
+    let isExpanded: Bool
+    let toggle: () -> Void
+    
+    var body: some View {
+        Button(action: toggle) {
+            HStack {
+                ForEach(0..<indent, id: \.self) { _ in
+                    Text("  ")
+                }
+                Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    .font(.caption)
+                Image(systemName: "folder")
+                    .foregroundColor(.blue)
+                Text(name)
+                Spacer()
+            }
+        }
+        .buttonStyle(.plain)
+        .padding(.vertical, 2)
     }
 }

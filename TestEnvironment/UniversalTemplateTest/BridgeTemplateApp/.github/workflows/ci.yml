@@ -1,0 +1,14 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    uses: ../../.github/workflows/universal-component.yml
+    with:
+      component_path: .
+      hierarchy_level: app
